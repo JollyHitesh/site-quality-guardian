@@ -1,10 +1,56 @@
 {
   "schemaVersion": 1,
-  "runs": 0,
-  "lastRun": null,
-  "actionCounts": {},
-  "visitedPaths": {},
-  "observations": {},
+  "runs": 1,
+  "lastRun": "2026-11-08T07:50:13.619Z",
+  "actionCounts": {
+    "desktop:navigate:https://www.ov-berlin.de/": 1,
+    "desktop:click:Tonight": 1,
+    "desktop:click:Tomorrow": 1,
+    "desktop:click:Weekend": 1,
+    "desktop:click:English audio": 1,
+    "desktop:click:German subtitles": 1,
+    "desktop:click:English subtitles": 1,
+    "desktop:view:List": 1,
+    "desktop:search:English tonight": 1,
+    "desktop:search:OmU Mitte": 1,
+    "mobile:navigate:https://www.ov-berlin.de/": 1,
+    "mobile:click:Tonight": 1,
+    "mobile:click:Tomorrow": 1,
+    "mobile:click:Weekend": 1,
+    "mobile:click:English audio": 1
+  },
+  "visitedPaths": {
+    "/": 1
+  },
+  "observations": {
+    "page-http-desktop-landing-page-returned-http-403": {
+      "firstSeen": "2026-11-08T07:50:13.619Z",
+      "lastSeen": "2026-11-08T07:50:13.619Z",
+      "occurrences": 1,
+      "title": "Landing page returned HTTP 403",
+      "status": "CONFIRMED"
+    },
+    "accessibility-meta-refresh-desktop-accessibility-delayed-refresh-under": {
+      "firstSeen": "2026-11-08T07:50:13.619Z",
+      "lastSeen": "2026-11-08T07:50:13.619Z",
+      "occurrences": 1,
+      "title": "Accessibility: Delayed refresh under 20 hours must not be used",
+      "status": "CONFIRMED"
+    }
+  },
   "candidateRegressions": [],
-  "lastFindings": []
+  "lastFindings": [
+    {
+      "fingerprint": "page-http-desktop-landing-page-returned-http-403",
+      "title": "Landing page returned HTTP 403",
+      "status": "CONFIRMED",
+      "severity": "P1"
+    },
+    {
+      "fingerprint": "accessibility-meta-refresh-desktop-accessibility-delayed-refresh-under",
+      "title": "Accessibility: Delayed refresh under 20 hours must not be used",
+      "status": "CONFIRMED",
+      "severity": "P1"
+    }
+  ]
 }
