@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {safeFilename, cleanText} from './security.mjs';
+import {safeFilename, cleanText, escapeHtml as esc} from './security.mjs';
+import {writeUxReport} from './ux-report.mjs';
 import {redactDeep} from './redact.mjs';
 import {THRESHOLDS, rate} from './perf.mjs';
 
@@ -99,8 +100,6 @@ export function sortFindings(findings, primaryDevice) {
   const rank = f => (f.status === 'TRANSIENT' ? 100 : 0) + SEVERITIES.indexOf(f.severity) * 10 + (f.devices.includes(primaryDevice) ? 0 : 1);
   return [...findings].sort((a, b) => rank(a) - rank(b));
 }
-
-function esc(str) { return String(str ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c])); }
 
 const confirmedOrLikely = report => report.findings.filter(f => f.status !== 'TRANSIENT');
 
@@ -229,7 +228,7 @@ function writeHtml(report, out) {
   const blocked = Object.entries(report.safety?.blockedRequests || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'none';
   const model = report.model || {};
   const body = `<header><h1>${esc(report.config.name)} quality report</h1><p class="sub">${esc(report.config.url)} · ${esc(report.finishedAt)} · ${esc(report.mode)} · ${esc(report.status)}</p></header>
-${renderAccessBanner(report)}<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
+${renderAccessBanner(report)}${report.ux?.valid ? '<p><a href="ux/index.html"><strong>Open the expert UX report</strong></a></p>' : ''}<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
 <div class="grid">${SEVERITIES.map(s => metric(count(s), `${s}: ${SEVERITY_MEANING[s]}`, s)).join('')}${metric(transient.length, 'Transient, not counted')}${metric(model.states ?? 0, 'States discovered')}${metric(report.actions.length, 'Browser actions')}</div>
 <section id="findings"><h2>Findings, most urgent first</h2>${findings}${transient.length ? `<details><summary>${transient.length} transient, not counted</summary>${transient.map(renderFinding).join('')}</details>` : ''}${report.resolvedThisRun?.length ? `<p>Resolved in this run: ${esc(report.resolvedThisRun.join('; '))}</p>` : ''}</section>
 <section id="showtimes"><h2>Showtime accuracy</h2>${renderShowtimes(report.showtimes)}</section>
@@ -255,6 +254,7 @@ function writeManifest(report, out) {
   const files = {};
   const add = name => { const full = path.join(out, name); if (fs.existsSync(full)) files[name] = hash(full); };
   add('report.json');
+  add('ux-report.md');
   report.screenshots.forEach(add);
   for (const name of fs.readdirSync(out)) if (name.startsWith('trace-')) add(name);
   const manifest = {site: report.config.url, startedAt: report.startedAt, finishedAt: report.finishedAt, status: report.status, algorithm: 'sha256', files};
@@ -268,6 +268,7 @@ export function saveReport(rawReport, out = 'out') {
   fs.writeFileSync(path.join(out, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   writeMarkdown(report, out);
   writeHtml(report, out);
+  if (report.ux?.valid) writeUxReport(report, out);
   writeManifest(report, out);
 }
 
@@ -278,7 +279,11 @@ export function writeDashboardIndex(entries, out = 'out') {
     const active = confirmedOrLikely(report);
     const count = s => active.filter(f => f.severity === s).length;
     fs.cpSync(path.join(out, slug, 'site'), path.join(out, 'site', slug), {recursive: true});
-    return `<article class="issue"><h3><a href="${esc(slug)}/index.html">${esc(name)}</a></h3><p class="sub">${esc(url)}</p><p class="sub">${esc(report.finishedAt)} · ${esc(report.mode)} · ${esc(report.status)}</p><div class="grid">${SEVERITIES.map(s => `<div class="metric"><b class="${s}">${count(s)}</b><small>${s}</small></div>`).join('')}<div class="metric"><b>${esc(report.showtimes?.summary?.confirmed ?? 0)}/${esc(report.showtimes?.summary?.checked ?? 0)}</b><small>Showtimes confirmed</small></div></div></article>`;
+    // A later non-UX run keeps the most recent UX report on the dashboard.
+    const carried = process.env.GUARDIAN_PREVIOUS_UX && path.join(process.env.GUARDIAN_PREVIOUS_UX, slug);
+    if (carried && !report.ux?.valid && fs.existsSync(path.join(carried, 'index.html'))) fs.cpSync(carried, path.join(out, 'site', slug, 'ux'), {recursive: true});
+    const hasUx = fs.existsSync(path.join(out, 'site', slug, 'ux', 'index.html'));
+    return `<article class="issue"><h3><a href="${esc(slug)}/index.html">${esc(name)}</a></h3><p class="sub">${esc(url)}</p>${hasUx ? `<p><a href="${esc(slug)}/ux/index.html">Expert UX report</a></p>` : ''}<p class="sub">${esc(report.finishedAt)} · ${esc(report.mode)} · ${esc(report.status)}</p><div class="grid">${SEVERITIES.map(s => `<div class="metric"><b class="${s}">${count(s)}</b><small>${s}</small></div>`).join('')}<div class="metric"><b>${esc(report.showtimes?.summary?.confirmed ?? 0)}/${esc(report.showtimes?.summary?.checked ?? 0)}</b><small>Showtimes confirmed</small></div></div></article>`;
   }).join('');
   fs.writeFileSync(path.join(out, 'site', 'index.html'), pageShell('Site Quality Guardian', `<header><h1>Site Quality Guardian</h1><p class="sub">Independent, read-only website audits</p></header>${cards}`));
 }

@@ -126,5 +126,59 @@
   "booking": {
     "redirectPrefix": "/go/",
     "requireSponsoredRel": true
+  },
+  "ux": {
+    "devices": [
+      "mobile",
+      "tablet",
+      "desktop"
+    ],
+    "journeyDevices": [
+      "mobile",
+      "desktop"
+    ],
+    "keyControls": "search|filter",
+    "journeys": [
+      {
+        "id": "english-audio",
+        "title": "Find films with English audio",
+        "persona": "Tourist who needs films in English",
+        "why": "Original-language discovery is the purpose of the site.",
+        "targetActions": 2,
+        "estimatedTurns": 3,
+        "successCheck": {
+          "kind": "listing-narrowed-by",
+          "value": "English",
+          "alsoRequire": "none"
+        }
+      },
+      {
+        "id": "film-tickets",
+        "title": "Open a film and find where to get tickets",
+        "persona": "Visitor on a phone deciding what to see tonight",
+        "why": "Reaching the booking destination is a stated priority. Booking links are found and never followed.",
+        "targetActions": 2,
+        "estimatedTurns": 3,
+        "successCheck": {
+          "kind": "page-path-contains",
+          "value": "/movies/",
+          "alsoRequire": "booking-link"
+        }
+      },
+      {
+        "id": "cinema-programme",
+        "title": "Open a cinema's page to see what it shows",
+        "persona": "Local visitor with a favourite cinema",
+        "why": "Comparing cinemas is part of the site purpose.",
+        "targetActions": 3,
+        "estimatedTurns": 3,
+        "successCheck": {
+          "kind": "page-path-contains",
+          "value": "/cinemas/",
+          "alsoRequire": "none"
+        }
+      }
+    ],
+    "exploreActions": 18
   }
 }

@@ -4,13 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {cleanText} from './security.mjs';
 import {redactDeep} from './redact.mjs';
+import {emptyUxMemory, sanitizeUxMemory} from './ux-memory.mjs';
 
 export const SCHEMA_VERSION = 2;
 const LIMITS = {history: 60, controls: 1500, paths: 800, findings: 500, baselines: 250, lessons: 30, bits: 20};
 const RESOLVE_AFTER_MISSES = 2;
 
 export function emptyMemory(site = '') {
-  return {schemaVersion: SCHEMA_VERSION, site, runs: 0, lastRun: null, history: [], coverage: {controls: {}, paths: {}}, states: {}, baselines: {}, findings: {}, lessons: [], sources: {}};
+  return {schemaVersion: SCHEMA_VERSION, site, runs: 0, lastRun: null, history: [], coverage: {controls: {}, paths: {}}, states: {}, baselines: {}, findings: {}, lessons: [], sources: {}, ux: emptyUxMemory()};
 }
 
 const isObject = v => v && typeof v === 'object' && !Array.isArray(v);
@@ -66,6 +67,7 @@ export function sanitizeMemory(raw, site = '') {
   for (const [host, stat] of Object.entries(isObject(raw.sources) ? raw.sources : {})) {
     if (isObject(stat)) memory.sources[host.slice(0, 120)] = {attempts: count(stat.attempts), useful: count(stat.useful)};
   }
+  memory.ux = sanitizeUxMemory(raw.ux);
   memory.lessons = (Array.isArray(raw.lessons) ? raw.lessons : []).filter(isObject).slice(-LIMITS.lessons).map(l => ({text: cleanText(l.text, 200), at: cleanText(l.at, 30)}));
   return memory;
 }

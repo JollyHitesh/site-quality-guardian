@@ -10,7 +10,7 @@ const argv = process.argv.slice(2);
 const flag = (name, fallback) => { const i = argv.indexOf(name); return i < 0 ? fallback : argv[i + 1] || fallback; };
 
 const mode = flag('--mode', 'smoke');
-if (!['smoke', 'intelligent'].includes(mode)) { console.error('Mode must be smoke or intelligent'); process.exit(64); }
+if (!['smoke', 'intelligent', 'ux'].includes(mode)) { console.error('Mode must be smoke, intelligent or ux'); process.exit(64); }
 
 const out = flag('--out', 'out');
 const site = flag('--site', null);
