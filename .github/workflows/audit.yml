@@ -1,0 +1,113 @@
+name: Audit external website
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run type"
+        required: true
+        type: choice
+        default: smoke
+        options:
+          - smoke
+          - intelligent
+  schedule:
+    - cron: '37 5 * * *'       # daily baseline, UTC
+    - cron: '41 6 * * 0'       # weekly AI exploration, UTC
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site-guardian-production
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: github-pages
+    env:
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || github.event.schedule == '41 6 * * 0' && 'intelligent' || 'smoke' }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      CI: 'true'
+    steps:
+      - name: Checkout agent repository (never target website source)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install agent and Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npm run check
+
+      - name: Recover learning memory from guardian-state branch
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --heads origin guardian-state >/dev/null 2>&1; then
+            git fetch origin guardian-state
+            git show FETCH_HEAD:memory/state.json > memory/state.json || true
+          fi
+
+      - name: Install Claude Code for intelligent audits
+        if: env.MODE == 'intelligent' && (env.CLAUDE_CODE_OAUTH_TOKEN != '' || env.ANTHROPIC_API_KEY != '')
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run safe external browser audit
+        run: node src/runner.mjs --mode "$MODE" --config sites/ov-berlin.json
+
+      - name: Persist bounded learning memory
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          git config user.name "site-quality-guardian[bot]"
+          git config user.email "site-quality-guardian[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin guardian-state >/dev/null 2>&1; then
+            git fetch origin guardian-state
+            git worktree add -b guardian-state "$workdir" FETCH_HEAD
+          else
+            git worktree add -b guardian-state "$workdir" HEAD
+          fi
+          mkdir -p "$workdir/memory"
+          cp memory/state.json "$workdir/memory/state.json"
+          git -C "$workdir" add memory/state.json
+          if ! git -C "$workdir" diff --cached --quiet; then
+            git -C "$workdir" commit -m "chore: persist audit coverage and findings history"
+            git -C "$workdir" push origin HEAD:guardian-state
+          fi
+
+      - name: Upload complete audit evidence (private data must not be tested)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardian-${{ github.run_number }}
+          path: out/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Set up Pages
+        if: success()
+        uses: actions/configure-pages@v5
+
+      - name: Upload public dashboard
+        if: success()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/site
+
+      - name: Deploy public dashboard
+        if: success()
+        uses: actions/deploy-pages@v4

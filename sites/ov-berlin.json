@@ -1,0 +1,17 @@
+{
+  "name": "OV Berlin",
+  "url": "https://www.ov-berlin.de/",
+  "timezone": "Europe/Berlin",
+  "allowedHosts": ["www.ov-berlin.de", "ov-berlin.de"],
+  "maxActions": 30,
+  "detailPathPrefixes": ["/movies/"],
+  "maxAiRounds": 2,
+  "maxRunMinutes": 15,
+  "rateLimitMs": 800,
+  "searchQueries": ["English tonight", "OmU Mitte"],
+  "filters": ["Tonight", "Tomorrow", "Weekend", "English audio", "German subtitles", "English subtitles"],
+  "views": ["List", "Cards", "Map", "Week"],
+  "audiences": ["visitor seeking an original-language screening tonight", "tourist seeking English audio", "user switching dates and filters", "mobile user navigating to the correct cinema booking link"],
+  "devices": ["desktop", "mobile"],
+  "screenshotLimit": 14
+}
