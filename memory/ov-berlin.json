@@ -1,0 +1,1646 @@
+{
+ "schemaVersion": 2,
+ "site": "ov-berlin",
+ "runs": 1,
+ "lastRun": "2026-11-08T12:56:49.553Z",
+ "history": [
+  {
+   "at": "2026-11-08T12:56:49.553Z",
+   "mode": "smoke",
+   "status": "COMPLETED",
+   "actions": 61,
+   "states": 24,
+   "open": {
+    "P0": 0,
+    "P1": 31,
+    "P2": 17,
+    "P3": 6
+   },
+   "newFindings": 54,
+   "regressions": 0,
+   "transient": 10,
+   "showtimes": "PARTIALLY_VERIFIED",
+   "aiCalls": 0,
+   "lcpMs": 2588,
+   "goals": {
+    "total": 0,
+    "SUCCESS": 0,
+    "FAILURE": 0,
+    "INCOMPLETE": 0
+   }
+  }
+ ],
+ "coverage": {
+  "controls": {
+   "mobile|button|filters": 1,
+   "mobile|button|view: list": 1,
+   "mobile|button|english": 1,
+   "mobile|button|german subtitles (omu)": 1,
+   "mobile|button|english subtitles (omeu)": 1,
+   "mobile|button|evening": 1,
+   "mobile|button|mitte": 1,
+   "mobile|button|tomorrow": 1,
+   "mobile|button|weekend": 1,
+   "mobile|button|map": 1,
+   "mobile|button|cards": 1,
+   "mobile|button|week": 1,
+   "mobile|button|open navigation menu": 1,
+   "mobile|button|what does this mean?": 1,
+   "mobile|button|show calendar": 1,
+   "mobile|button|close filters": 1,
+   "mobile|button|close menu": 1,
+   "mobile-small|button|hide calendar": 1,
+   "mobile-small|searchbox|try \"english sunday\" or \"omu mitte\"…": 1,
+   "mobile-small|button|filters (1)": 1,
+   "mobile-small|button|view: map": 1,
+   "mobile-small|button|view: cards": 1,
+   "mobile-small|button|+5 more": 1,
+   "mobile-webkit|button|+1 more": 1,
+   "mobile-webkit|button|+3 more": 1,
+   "mobile-webkit|button|+2 more": 1,
+   "mobile-webkit|button|view: week": 1,
+   "mobile-webkit|button|kids under 6": 1,
+   "mobile-webkit|button|german": 1,
+   "desktop|button|switch to list view": 1,
+   "desktop|button|switch to cards view": 1,
+   "desktop|button|switch to map view": 1,
+   "desktop|button|switch to week view": 1,
+   "desktop|button|english audio": 1,
+   "desktop|button|german subtitles": 1,
+   "mobile|button|tonight": 5
+  },
+  "paths": {
+   "/": 1,
+   "/movies/the-odyssey": 1,
+   "/cinemas/cinestar-cubix": 1,
+   "/cinemas": 1,
+   "/guide": 1,
+   "/blog": 1,
+   "/datenschutz": 1,
+   "/english-movies-berlin": 1,
+   "/english-movies-berlin-today": 1,
+   "/movies/naza": 1,
+   "/cinemas/acud-kino": 1
+  }
+ },
+ "states": {
+  "/#3317925a37": 1,
+  "/#9bc347628d": 1,
+  "/#24e33b784d": 1,
+  "/#9e52d7bdbb": 1,
+  "/#49411021db": 1,
+  "/#db71aa5b84": 1,
+  "/#1d407a0eaf": 1,
+  "/#b5b935dc85": 1,
+  "/#099a3dc4d3": 1,
+  "/#49250ea90d": 1,
+  "/#d9c7e459b8": 1,
+  "/#5fa3c408c8": 1,
+  "/#e22160dacf": 1,
+  "/#d65a483d7e": 1,
+  "/#b14b278456": 1,
+  "/#3ea848cf73": 1,
+  "/#676c8635a5": 1,
+  "/#dab8210f10": 1,
+  "/#21839a6f84": 1,
+  "/#0208bdc12f": 1,
+  "/#3797bd3b4e": 1,
+  "/#a6684bc4a1": 1,
+  "/#0a9ebc58ed": 1,
+  "/#b3c5c5af73": 1
+ },
+ "baselines": {
+  "mobile|/#3317925a37": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    8446
+   ],
+   "controlCount": [
+    356
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#9bc347628d": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    9085
+   ],
+   "controlCount": [
+    414
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#24e33b784d": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    8466
+   ],
+   "controlCount": [
+    360
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#9e52d7bdbb": {
+   "itemCount": [
+    0
+   ],
+   "textLength": [
+    134
+   ],
+   "controlCount": [
+    0
+   ],
+   "headings": {
+    "Application error: a client-side exception has occurred while loading www.ov-berlin.de (see the brow": 1
+   }
+  },
+  "mobile|/#49411021db": {
+   "itemCount": [
+    35
+   ],
+   "textLength": [
+    8347
+   ],
+   "controlCount": [
+    366
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#db71aa5b84": {
+   "itemCount": [
+    0
+   ],
+   "textLength": [
+    134
+   ],
+   "controlCount": [
+    0
+   ],
+   "headings": {
+    "Application error: a client-side exception has occurred while loading www.ov-berlin.de (see the brow": 1
+   }
+  },
+  "mobile|/#1d407a0eaf": {
+   "itemCount": [
+    17
+   ],
+   "textLength": [
+    6985
+   ],
+   "controlCount": [
+    282
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#b5b935dc85": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4519
+   ],
+   "controlCount": [
+    170
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#099a3dc4d3": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    10064
+   ],
+   "controlCount": [
+    366
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "mobile|/#49250ea90d": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4587
+   ],
+   "controlCount": [
+    137
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#d9c7e459b8": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    8541
+   ],
+   "controlCount": [
+    366
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#5fa3c408c8": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    8580
+   ],
+   "controlCount": [
+    357
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#e22160dacf": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    8523
+   ],
+   "controlCount": [
+    365
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#d65a483d7e": {
+   "itemCount": [
+    9
+   ],
+   "textLength": [
+    5759
+   ],
+   "controlCount": [
+    186
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#b14b278456": {
+   "itemCount": [
+    9
+   ],
+   "textLength": [
+    6408
+   ],
+   "controlCount": [
+    245
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#3ea848cf73": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4539
+   ],
+   "controlCount": [
+    174
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#676c8635a5": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    10084
+   ],
+   "controlCount": [
+    370
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "mobile-webkit|/#dab8210f10": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4607
+   ],
+   "controlCount": [
+    141
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-webkit|/#21839a6f84": {
+   "itemCount": [
+    8
+   ],
+   "textLength": [
+    6113
+   ],
+   "controlCount": [
+    229
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-webkit|/#0208bdc12f": {
+   "itemCount": [
+    29
+   ],
+   "textLength": [
+    7881
+   ],
+   "controlCount": [
+    342
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#3797bd3b4e": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    9971
+   ],
+   "controlCount": [
+    392
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "desktop|/#a6684bc4a1": {
+   "itemCount": [
+    45
+   ],
+   "textLength": [
+    20074
+   ],
+   "controlCount": [
+    426
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#0a9ebc58ed": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4758
+   ],
+   "controlCount": [
+    196
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#b3c5c5af73": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4826
+   ],
+   "controlCount": [
+    163
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  }
+ },
+ "findings": {
+  "broken-internal-link-2ea0e85c": {
+   "title": "Internal link /movies/wildwood returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-63d14751": {
+   "title": "Internal link /cinemas/rollberg returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-eac6c576": {
+   "title": "Internal link /movies/wings-of-desire returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-1db3859c": {
+   "title": "Internal link /datenschutz returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-6c39c6ea": {
+   "title": "Internal link /english-movies-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-e8838dad": {
+   "title": "Internal link /english-movies-berlin-today returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-8ff96fa1": {
+   "title": "Internal link /ov-movies-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-baff06c6": {
+   "title": "Internal link /ov-kino-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-fdb949d0": {
+   "title": "Internal link /omu-kino-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-08970bd8": {
+   "title": "Internal link /omeu-movies-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-2ce6ef60": {
+   "title": "Internal link /originalfassung-kino-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-c75bddac": {
+   "title": "Internal link /guide/what-is-ov returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-c6de1678": {
+   "title": "Internal link /guide/ov-cinemas-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-d6f47dc2": {
+   "title": "Internal link /movies-by-language returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-15c65311": {
+   "title": "Internal link /about returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-3707a31c": {
+   "title": "Internal link /guide/omu-kino-berlin returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "broken-internal-link-aea6283a": {
+   "title": "Internal link /impressum returns HTTP 403",
+   "kind": "broken-internal-link",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-ef73854b": {
+   "title": "Page /movies/:slug returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit",
+    "desktop"
+   ]
+  },
+  "page-http-error-c1300252": {
+   "title": "Page /cinemas/:slug returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/movies/:slug"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit",
+    "desktop"
+   ]
+  },
+  "page-http-error-54075dc7": {
+   "title": "Page /cinemas returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/cinemas/:slug"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit",
+    "desktop"
+   ]
+  },
+  "page-http-error-4564c930": {
+   "title": "Page /guide returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/cinemas"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-cf5553e8": {
+   "title": "Page /blog returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/guide"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-6a91da50": {
+   "title": "Page /datenschutz returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/blog"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-e6f6470a": {
+   "title": "Page /english-movies-berlin returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/datenschutz"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-06a18ab4": {
+   "title": "Page /english-movies-berlin-today returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/english-movies-berlin"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "javascript-error-27c11c8f": {
+   "title": "Uncaught JavaScript error: An unexpected response was received from the server.",
+   "kind": "javascript-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "desktop"
+   ]
+  },
+  "soft-error-page-597edabe": {
+   "title": "Page shows an error message while returning HTTP success",
+   "kind": "soft-error-page",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "page-http-error-a3edb2f3": {
+   "title": "Page / returned HTTP 403",
+   "kind": "page-http-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "layout-overflow-bb6aa037": {
+   "title": "Content is wider than the screen, causing sideways scrolling",
+   "kind": "layout-overflow",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile-small"
+   ]
+  },
+  "javascript-error-6eeed05e": {
+   "title": "Uncaught JavaScript error: /challenges.cloudflare.com\" from accessing a frame with origin \"https://www.ov-berlin.de\".",
+   "kind": "javascript-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/cinemas"
+   ],
+   "devices": [
+    "mobile-webkit"
+   ]
+  },
+  "javascript-error-84a220af": {
+   "title": "Uncaught JavaScript error: Error: An unexpected response was received from the server.",
+   "kind": "javascript-error",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile-webkit"
+   ]
+  },
+  "primary-tap-target-small-f53dad21": {
+   "title": "Main call-to-action links are under 44px tall on phones",
+   "kind": "primary-tap-target-small",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "input-zoom-ios-fb1ef67c": {
+   "title": "Form fields under 16px make iPhones zoom in on focus",
+   "kind": "input-zoom-ios",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "sticky-coverage-6d9817fd": {
+   "title": "Sticky bars cover more than 30% of the screen on phones",
+   "kind": "sticky-coverage",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "sticky-coverage-landscape-a16bda46": {
+   "title": "Sticky bars cover more than 50% of the screen in landscape",
+   "kind": "sticky-coverage-landscape",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "tap-target-too-small-7823b132": {
+   "title": "Touch targets below the 24px minimum and crowded by neighbours",
+   "kind": "tap-target-too-small",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "resource-http-error-d6cd6806": {
+   "title": "Request / returned HTTP 403",
+   "kind": "resource-http-error",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-webkit",
+    "desktop"
+   ]
+  },
+  "filter-empty-unexplained-7dd87f41": {
+   "title": "\"Tonight\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "filter-empty-unexplained-15a368a4": {
+   "title": "\"German subtitles (OmU)\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "filter-empty-unexplained-34d0b020": {
+   "title": "\"English subtitles (OmeU)\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "filter-empty-unexplained-3595c177": {
+   "title": "\"Mitte\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "filter-empty-unexplained-c7193e3f": {
+   "title": "\"Tomorrow\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "filter-empty-unexplained-688ea260": {
+   "title": "\"Weekend\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "performance-tbtMs-3a85eea1": {
+   "title": "Total Blocking Time is poor on a throttled phone",
+   "kind": "performance-tbtMs",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "lazy-lcp-image-f7e0dd9d": {
+   "title": "The largest visible image is lazy-loaded, delaying first view",
+   "kind": "lazy-lcp-image",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "accessibility-label-content-name-mismatch-2755c996": {
+   "title": "Accessibility: Elements must have their visible text as part of their accessible name",
+   "kind": "accessibility-label-content-name-mismatch",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "desktop"
+   ]
+  },
+  "filter-empty-unexplained-a7925e7c": {
+   "title": "\"English audio\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "desktop"
+   ]
+  },
+  "filter-empty-unexplained-a9ab6a8b": {
+   "title": "\"German subtitles\" leaves an empty list with no explanation",
+   "kind": "filter-empty-unexplained",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "desktop"
+   ]
+  },
+  "csp-blocked-2c5f9f77": {
+   "title": "Content-Security-Policy blocks requests to static.cloudflareinsights.com",
+   "kind": "csp-blocked",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "desktop"
+   ]
+  },
+  "tap-target-comfort-bb47ebfc": {
+   "title": "Touch targets under the recommended 44px height",
+   "kind": "tap-target-comfort",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "small-text-b9ba4810": {
+   "title": "Text smaller than 12px is hard to read on phones",
+   "kind": "small-text",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "performance-lcpMs-fe8c20ab": {
+   "title": "Largest Contentful Paint is worse than recommended on a throttled phone",
+   "kind": "performance-lcpMs",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "performance-cls-02aaae68": {
+   "title": "Cumulative Layout Shift is worse than recommended on a throttled phone",
+   "kind": "performance-cls",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "performance-tbtMs-ea508dbb": {
+   "title": "Total Blocking Time is worse than recommended on a throttled phone",
+   "kind": "performance-tbtMs",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T12:56:49.553Z",
+   "lastSeen": "2026-11-08T12:56:49.553Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/movies/:slug"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  }
+ },
+ "lessons": [],
+ "sources": {
+  "www.cinestar.de": {
+   "attempts": 1,
+   "useful": 0
+  },
+  "ladenkino.de": {
+   "attempts": 1,
+   "useful": 0
+  },
+  "www.yorck.de": {
+   "attempts": 1,
+   "useful": 1
+  },
+  "www.lichtblick-kino.org": {
+   "attempts": 1,
+   "useful": 1
+  },
+  "www.babylonberlin.eu": {
+   "attempts": 1,
+   "useful": 1
+  },
+  "www.cinemaxx.de": {
+   "attempts": 1,
+   "useful": 0
+  }
+ }
+}
