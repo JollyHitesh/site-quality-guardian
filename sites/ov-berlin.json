@@ -2,28 +2,125 @@
   "name": "OV Berlin",
   "url": "https://www.ov-berlin.de/",
   "timezone": "Europe/Berlin",
-  "allowedHosts": ["www.ov-berlin.de", "ov-berlin.de"],
-  "devices": ["mobile", "mobile-small", "mobile-webkit", "desktop"],
+  "allowedHosts": [
+    "www.ov-berlin.de",
+    "ov-berlin.de"
+  ],
+  "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit",
+    "desktop"
+  ],
   "maxActions": 50,
   "maxPages": 8,
-  "maxAiRounds": 2,
   "maxRunMinutes": 20,
   "rateLimitMs": 800,
   "screenshotLimit": 30,
   "linkCheckLimit": 30,
-  "detailPathPrefixes": ["/movies/", "/cinemas/"],
-  "excludePaths": ["/go", "/feed.xml", "/cookie-settings", "/newsletter", "/contact", "/watchlist", "/my-cinemas"],
-  "searchQueries": ["English Sunday", "OmU Mitte"],
-  "filters": ["Tonight", "Tomorrow", "Weekend", "English audio", "German subtitles", "English subtitles"],
-  "views": ["Switch to list view", "Switch to cards view", "Switch to map view", "Switch to week view"],
+  "detailPathPrefixes": [
+    "/movies/",
+    "/cinemas/"
+  ],
+  "excludePaths": [
+    "/go",
+    "/feed.xml",
+    "/cookie-settings",
+    "/newsletter",
+    "/contact",
+    "/watchlist",
+    "/my-cinemas",
+    "/sitemap",
+    "/opengraph-image"
+  ],
+  "searchQueries": [
+    "English Sunday",
+    "OmU Mitte"
+  ],
+  "filters": [
+    "Tonight",
+    "Tomorrow",
+    "Weekend",
+    "English audio",
+    "German subtitles",
+    "English subtitles"
+  ],
+  "views": [
+    "Switch to list view",
+    "Switch to cards view",
+    "Switch to map view",
+    "Switch to week view"
+  ],
   "deviceOverrides": {
     "mobile": {
-      "filters": ["Tonight", "Tomorrow", "Weekend", "English", "German subtitles (OmU)", "English subtitles (OmeU)", "Mitte", "Evening"],
-      "views": ["Cards", "Map", "Week"],
-      "revealButtons": ["Filters", "View: list"],
-      "revealCloseButtons": ["Done", "Close filters"]
+      "filters": [
+        "Tonight",
+        "Tomorrow",
+        "Weekend",
+        "English",
+        "German subtitles (OmU)",
+        "English subtitles (OmeU)",
+        "Mitte",
+        "Evening"
+      ],
+      "views": [
+        "Cards",
+        "Map",
+        "Week"
+      ],
+      "safeButtons": [
+        "Filters",
+        "View: list"
+      ]
     }
   },
-  "checks": {"nextScreening": true},
-  "audiences": ["visitor on a phone seeking an original-language screening tonight", "tourist seeking English audio", "user switching dates and filters on a small screen", "mobile user finding the right cinema booking link"]
+  "checks": {
+    "nextScreening": true
+  },
+  "audiences": [
+    "visitor on a phone seeking an original-language screening tonight",
+    "tourist seeking English audio",
+    "user switching dates and filters on a small screen",
+    "mobile user finding the right cinema booking link"
+  ],
+  "purpose": "Help visitors discover original-version films in Berlin, filter screenings accurately, compare cinemas and showtimes, and reach the correct booking destination.",
+  "priorities": [
+    "Showtime accuracy",
+    "Successful movie discovery",
+    "Accurate filtering",
+    "Reaching the correct booking destination"
+  ],
+  "showtimes": {
+    "enabled": true,
+    "sampleSize": 6
+  },
+  "safeButtons": [],
+  "filterSemantics": [
+    {
+      "control": "^German subtitles",
+      "itemsMustMatch": "OmU",
+      "minShare": 0.9,
+      "applicableIf": "\\b(OV|OmU|OmeU)\\b"
+    },
+    {
+      "control": "^English subtitles",
+      "itemsMustMatch": "OmeU",
+      "minShare": 0.9,
+      "applicableIf": "\\b(OV|OmU|OmeU)\\b"
+    }
+  ],
+  "readOnly": {
+    "allowPostBodies": [
+      {
+        "pathPrefix": "/",
+        "bodyMustMatch": "^\\[\\{\"date\":\"[^\"]*\",\"format\":\"[^\"]*\",\"district\":\"[^\"]*\",\"presentationType\":\"[^\"]*\",\"formats\":\"[^\"]*\"\\}\\]$",
+        "why": "Next.js server action that fetches listings; the body holds only filter values."
+      },
+      {
+        "pathPrefix": "/",
+        "bodyMustMatch": "^\\[\\{\"weekDays\":\\[(\"\\d{4}-\\d{2}-\\d{2}\",?){1,14}\\],\"format\":\"[^\"]*\",\"district\":\"[^\"]*\"\\}\\]$",
+        "why": "Next.js server action behind the week view; the body holds only dates and filter values."
+      }
+    ]
+  }
 }

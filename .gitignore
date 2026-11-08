@@ -7,3 +7,5 @@ out/
 playwright-report/
 test-results/
 *.log
+memory/*.json
+memory/*.corrupt

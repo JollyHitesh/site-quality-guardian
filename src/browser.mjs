@@ -1,34 +1,124 @@
-import {isAllowedUrl, safeAction, policyAllows, cleanText, DENIED_LABEL} from './security.mjs';
+// Sees the page the way a visitor's browser does, and acts only on controls classified as safe.
+import {classifyControl, isAllowedUrl, cleanText} from './security.mjs';
 
-const EMPTY_RESULTS = /\b(no (results|movies|films|screenings|showtimes|matches)|nothing found|keine (ergebnisse|treffer|filme|vorstellungen))\b/i;
+export const EMPTY_RESULTS = /\b(no (results|movies|films|screenings|showtimes|matches|events)|nothing found|keine (ergebnisse|treffer|filme|vorstellungen))\b/i;
 
 /** Waits for hydration and data fetches, so clicks reach a page that can respond. */
 export async function settle(page, timeout = 4000) {
   await page.waitForLoadState('networkidle', {timeout}).catch(() => {});
 }
 
-export async function inventoryPage(page, config) {
-  const raw = await page.evaluate(() => {
-    const visible = el => !!(el.getClientRects().length) && getComputedStyle(el).visibility !== 'hidden';
-    const text = x => (x || '').replace(/\s+/g, ' ').trim().slice(0, 100);
+/* Runs inside the page, so it can only use browser globals. */
+function collectObservation() {
+  const clean = s => (s || '').replace(/\s+/g, ' ').trim();
+  const visible = el => {
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== 'hidden' && s.display !== 'none' && Number(s.opacity) > 0;
+  };
+  const IMPLICIT = {A: 'link', BUTTON: 'button', SELECT: 'combobox', SUMMARY: 'button', TEXTAREA: 'textbox'};
+  const roleOf = el => {
+    const explicit = el.getAttribute('role');
+    if (explicit) return explicit;
+    if (el.tagName === 'INPUT') return {checkbox: 'checkbox', radio: 'radio', search: 'searchbox', submit: 'button', button: 'button'}[el.type] || 'textbox';
+    return IMPLICIT[el.tagName] || el.tagName.toLowerCase();
+  };
+  const nameOf = el => {
+    const labelled = el.getAttribute('aria-labelledby');
+    const fromIds = labelled ? labelled.split(/\s+/).map(id => document.getElementById(id)?.innerText || '').join(' ') : '';
+    const forLabel = el.labels?.[0]?.innerText;
+    return clean(el.getAttribute('aria-label') || fromIds || forLabel || el.innerText || el.querySelector?.('img[alt]')?.alt || el.title || el.placeholder || (el.type === 'submit' ? el.value : '')).slice(0, 90);
+  };
+  const regionOf = el => {
+    if (el.closest('dialog,[role=dialog],[aria-modal=true]')) return 'dialog';
+    if (el.closest('nav,[role=navigation]')) return 'nav';
+    if (el.closest('header,[role=banner]')) return 'header';
+    if (el.closest('footer,[role=contentinfo]')) return 'footer';
+    if (el.closest('aside,[role=complementary]')) return 'aside';
+    return 'main';
+  };
+  const cssPath = el => {
+    const parts = [];
+    for (let node = el; node && node.nodeType === 1 && node !== document.documentElement; node = node.parentElement) {
+      if (node.id && document.querySelectorAll(`#${CSS.escape(node.id)}`).length === 1) { parts.unshift(`#${CSS.escape(node.id)}`); break; }
+      let index = 1;
+      for (let s = node.previousElementSibling; s; s = s.previousElementSibling) if (s.tagName === node.tagName) index++;
+      parts.unshift(`${node.tagName.toLowerCase()}:nth-of-type(${index})`);
+    }
+    return parts.join(' > ');
+  };
+  const formOf = el => {
+    const form = el.form || el.closest('form');
+    if (!form) return null;
+    const fields = [...form.querySelectorAll('input,textarea')];
+    const sensitive = fields.some(f => ['email', 'password', 'tel', 'file', 'url'].includes(f.type) || /e-?mail|password|passwort|credit|card/i.test(`${f.name} ${f.placeholder} ${f.autocomplete}`));
+    return {method: (form.getAttribute('method') || 'get').toLowerCase(), sensitive};
+  };
+  const covered = el => {
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (y < 0 || y >= innerHeight || x < 0 || x >= innerWidth) return false; // off screen: nothing to compare yet
+    const top = document.elementFromPoint(x, y);
+    return !!top && top !== el && !el.contains(top) && !top.contains(el);
+  };
+  const bool = (el, attr) => { const v = el.getAttribute(attr); return v === null ? null : v === 'true'; };
+  const selector = 'a[href],button,[role=button],[role=tab],[role=switch],[role=checkbox],[role=radio],[role=menuitem],[role=link],[role=option],select,input:not([type=hidden]),textarea,summary';
+  const elements = [...document.querySelectorAll(selector)].filter(visible);
+  const controls = elements.slice(0, 500).map((el, i) => {
+    const r = el.getBoundingClientRect();
     return {
-      title: document.title,
-      heading: [...document.querySelectorAll('h1,h2')].filter(visible).slice(0, 12).map(x => text(x.innerText)),
-      buttons: [...document.querySelectorAll('button,[role="button"]')].filter(visible).map(x => text(x.getAttribute('aria-label') || x.innerText || x.title)).filter(Boolean),
-      internalLinks: [...document.querySelectorAll('a[href]')].filter(visible).map(x => ({text: text(x.getAttribute('aria-label') || x.innerText || x.title), href: x.href})).filter(x => x.text),
-      inputs: [...document.querySelectorAll('input')].filter(visible).map(x => ({placeholder: text(x.placeholder), type: x.type, ariaLabel: text(x.getAttribute('aria-label'))})).slice(0, 30),
-      bodyText: text(document.body.innerText || '').slice(0, 3800),
-      dimensions: {width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth},
+      ref: `c${i}`, tag: el.tagName.toLowerCase(), role: roleOf(el), type: el.type || '', name: nameOf(el), title: clean(el.title), placeholder: clean(el.placeholder), value: el.tagName === 'INPUT' && ['submit', 'button'].includes(el.type) ? clean(el.value) : '',
+      href: el.href && el.tagName === 'A' ? el.href : '', target: el.getAttribute('target') || '', region: regionOf(el), form: formOf(el),
+      disabled: !!el.disabled || el.getAttribute('aria-disabled') === 'true', expanded: bool(el, 'aria-expanded'), pressed: bool(el, 'aria-pressed') ?? bool(el, 'aria-selected') ?? bool(el, 'aria-checked'),
+      covered: covered(el), css: cssPath(el), w: Math.round(r.width), h: Math.round(r.height), options: el.tagName === 'SELECT' ? [...el.options].slice(0, 25).map(o => clean(o.text).slice(0, 40)) : undefined,
     };
   });
-  raw.buttons = [...new Set(raw.buttons)].slice(0, 200);
-  raw.internalLinks = raw.internalLinks.filter(x => isAllowedUrl(x.href, config)).slice(0, 400);
-  raw.url = page.url();
-  return raw;
+
+  // Finds the page's main repeated collection without being told what it looks like.
+  const signature = el => `${el.tagName}.${(typeof el.className === 'string' ? el.className : '').trim().split(/\s+/).slice(0, 2).join('.')}`;
+  let best = null;
+  for (const parent of document.querySelectorAll('main *, body > div *, ul, ol')) {
+    if (parent.children.length < 3 || parent.closest('nav,footer,header')) continue;
+    const groups = new Map();
+    for (const child of parent.children) {
+      if (!visible(child)) continue;
+      const key = signature(child);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(child);
+    }
+    for (const list of groups.values()) {
+      if (list.length < 3) continue;
+      const length = list.reduce((n, c) => n + clean(c.innerText).length, 0);
+      if (length / list.length < 15) continue;
+      if (!best || length > best.length) best = {list, length};
+    }
+  }
+  const items = best ? best.list.slice(0, 40).map(el => clean(el.innerText).slice(0, 180)) : [];
+  const text = clean(document.body.innerText);
+  const countMatch = text.match(/\b(\d{1,5})\s+(?:results?|movies?|films?|screenings?|showtimes?|events?|Filme|Vorstellungen|Ergebnisse)\b/i);
+  const activeControls = elements.filter(el => ['aria-pressed', 'aria-selected', 'aria-checked'].some(a => el.getAttribute(a) === 'true') || (el.hasAttribute('aria-current') && el.getAttribute('aria-current') !== 'false'));
+  const expandedControls = elements.filter(el => el.getAttribute('aria-expanded') === 'true');
+  return {
+    url: location.href,
+    title: document.title,
+    headings: [...document.querySelectorAll('h1,h2')].filter(visible).slice(0, 12).map(x => clean(x.innerText).slice(0, 100)),
+    controls,
+    text: text.slice(0, 4000),
+    textLength: text.length,
+    active: activeControls.map(nameOf).filter(Boolean).slice(0, 25),
+    expanded: expandedControls.map(nameOf).filter(Boolean).slice(0, 12),
+    dialogOpen: !!document.querySelector('dialog[open],[role=dialog]:not([hidden]),[aria-modal=true]'),
+    listing: {count: best ? best.list.length : 0, items, statedCount: countMatch ? Number(countMatch[1]) : null},
+  };
 }
 
-function visibleButton(page, name) {
-  return page.getByRole('button', {name, exact: true}).filter({visible: true}).first();
+export async function observe(page, config) {
+  const raw = await page.evaluate(collectObservation);
+  // A control behind an open drawer is not something a visitor could tap right now.
+  raw.controls = raw.controls.map(c => ({...c, classification: c.covered ? {allowed: false, kind: null, reason: 'covered'} : classifyControl(c, config)}));
+  raw.emptyMessage = EMPTY_RESULTS.test(raw.text);
+  return raw;
 }
 
 /** A cheap signature of what the visitor sees, to detect whether a control did anything. */
@@ -41,131 +131,104 @@ function stateSignature(page) {
   });
 }
 
-async function waitForChange(page, before, timeout = 3000) {
+async function waitForChange(page, before, timeout) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    if (await stateSignature(page) !== before) return true;
+    if (await stateSignature(page).catch(() => '') !== before) return true;
     await page.waitForTimeout(200);
   }
   return false;
 }
 
-/** Tries each configured drawer or menu button until the target control appears. */
-async function revealControl(page, target, inventory, config) {
-  for (const label of config.revealButtons || []) {
-    if (DENIED_LABEL.test(label) || !inventory.buttons.includes(label)) continue;
-    const opened = await visibleButton(page, label).click({timeout: 5000}).then(() => true, () => false);
-    if (opened) {
-      await page.waitForTimeout(400);
-      const revealed = await inventoryPage(page, config);
-      if (revealed.buttons.includes(target)) return {via: label, inventory: revealed};
+/** Client-side data can arrive well after the URL changes, so judge results once quiet. */
+async function waitForStable(page, timeout = 6000) {
+  let last = null, quiet = 0;
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const value = await page.evaluate(() => `${document.body.innerText.length}:${document.querySelectorAll('*').length}`).catch(() => null);
+    if (value !== null && value === last) {
+      if (++quiet >= 3) return true;
+    } else {
+      quiet = 0;
+      last = value;
     }
-    await page.reload({waitUntil: 'domcontentloaded', timeout: 20000});
-    await settle(page);
+    await page.waitForTimeout(300);
   }
-  return null;
-}
-
-async function closeRevealed(page, config) {
-  for (const label of config.revealCloseButtons || []) {
-    const button = visibleButton(page, label);
-    if (await button.count()) {
-      await button.click({timeout: 4000}).catch(() => {});
-      await page.waitForTimeout(250);
-      return;
-    }
-  }
-  await page.keyboard.press('Escape').catch(() => {});
-  await page.waitForTimeout(150);
-}
-
-async function openLink(page, target, candidate) {
-  const link = page.getByRole('link', {name: target, exact: true}).filter({visible: true}).first();
-  if (await link.count()) {
-    const tapped = await link.click({timeout: 8000}).then(() => true, () => false);
-    if (tapped) { await settle(page); return 'tap'; }
-  }
-  await page.goto(candidate.href, {waitUntil: 'domcontentloaded', timeout: 25000});
-  await settle(page);
-  return 'goto';
-}
-
-async function runSearch(page, query, config) {
-  const pattern = new RegExp(config.searchPlaceholderPattern || 'Try|Search|Suche', 'i');
-  let input = page.getByPlaceholder(pattern).filter({visible: true}).first();
-  if (await input.count() === 0) input = page.locator('input[type="search"]').filter({visible: true}).first();
-  if (await input.count() === 0) return false;
-  await input.fill(query, {timeout: 7000});
-  await input.press('Enter', {timeout: 7000}).catch(() => {});
-  return true;
+  return false;
 }
 
 function classifyFailure(message) {
-  return /intercepts pointer events/.test(message) ? 'obscured' : 'error';
+  if (/intercepts pointer events/.test(message)) return 'obscured';
+  if (/outside of the viewport|not visible|Timeout .* exceeded/.test(message)) return 'unreachable';
+  return 'error';
+}
+
+/* Re-reads the element at click time: the page may have swapped it since the snapshot. */
+function liveDescription(el) {
+  const clean = s => (s || '').replace(/\s+/g, ' ').trim();
+  const form = el.form || el.closest('form');
+  return {
+    name: clean(el.getAttribute('aria-label') || el.innerText || el.title || el.placeholder).slice(0, 90),
+    href: el.tagName === 'A' ? el.href : '',
+    tag: el.tagName.toLowerCase(),
+    type: el.type || '',
+    role: el.getAttribute('role') || (el.tagName === 'A' ? 'link' : ''),
+    placeholder: clean(el.placeholder),
+    disabled: !!el.disabled,
+    form: form ? {method: (form.getAttribute('method') || 'get').toLowerCase(), sensitive: !!form.querySelector('input[type=email],input[type=password],input[type=tel],input[type=file]')} : null,
+  };
 }
 
 /**
- * Executes one allowlisted action. `code` separates site problems from audit problems:
- * rejected (policy), missing (control absent), obscured (an overlay blocked it), error (anything else).
- * A successful click carries `changed: false` when nothing on the page responded.
+ * Performs one action on a discovered control. `code` separates site problems from audit
+ * problems: rejected (safety), missing, obscured, unreachable, error.
  */
-export async function runAction(page, action, inventory, config) {
-  if (!policyAllows(action, config)) return {ok: false, code: 'rejected', reason: 'Action rejected by safety policy'};
+export async function act(page, control, config, {value, changeTimeout = 3000} = {}) {
+  const classification = classifyControl(control, config);
+  if (!classification.allowed) return {ok: false, code: 'rejected', reason: `Blocked by safety policy: ${classification.reason}`};
   const before = page.url();
-  let current = inventory;
-  let via = null;
-  const isButton = action.type === 'click' || action.type === 'view';
+  const startedAt = Date.now();
   try {
-    if (isButton && !current.buttons.includes(action.target)) {
-      const revealed = await revealControl(page, action.target, current, config);
-      if (!revealed) return {ok: false, code: 'missing', reason: 'Control not found on this device'};
-      current = revealed.inventory;
-      via = revealed.via;
-    }
-    if (!safeAction(action, current, config)) {
-      const code = action.type === 'open_detail' ? 'missing' : 'rejected';
-      return {ok: false, code, reason: code === 'missing' ? 'Link not available' : 'Action rejected by safety policy'};
-    }
+    const locator = page.locator(`css=${control.css}`).first();
+    if (await locator.count() === 0) return {ok: false, code: 'missing', reason: 'Control is no longer on the page'};
+    const live = await locator.evaluate(liveDescription);
+    const liveCheck = classifyControl({...control, ...live}, config);
+    if (!liveCheck.allowed) return {ok: false, code: 'rejected', reason: `Blocked at click time: ${liveCheck.reason}`};
 
     const signature = await stateSignature(page);
-    let changed = null;
-    if (action.type === 'back') {
-      await page.goBack({waitUntil: 'domcontentloaded', timeout: 15000});
+    let wasActive = false;
+    if (classification.kind === 'search') {
+      if (!value) return {ok: false, code: 'rejected', reason: 'Search needs a query'};
+      await locator.fill(value, {timeout: 7000});
+      await locator.press('Enter', {timeout: 7000}).catch(() => {});
+    } else if (classification.kind === 'select') {
+      const options = control.options || [];
+      const choice = value && options.includes(value) ? value : options.find((o, i) => i > 0);
+      if (!choice) return {ok: false, code: 'missing', reason: 'Select has no options to choose'};
+      await locator.selectOption({label: choice}, {timeout: 7000});
+    } else {
+      wasActive = await locator.evaluate(el => ['aria-pressed', 'aria-selected', 'aria-checked'].some(a => el.getAttribute(a) === 'true') || el.hasAttribute('aria-current'));
+      await locator.click({timeout: 8000});
     }
-    if (action.type === 'search') {
-      if (!await runSearch(page, action.target, config)) return {ok: false, code: 'missing', reason: 'No search input found'};
-      changed = await waitForChange(page, signature);
-    }
-    if (isButton) {
-      const button = visibleButton(page, action.target);
-      if (await button.count() === 0) return {ok: false, code: 'missing', reason: 'Button no longer visible'};
-      const wasActive = await button.evaluate(el => ['aria-pressed', 'aria-selected', 'aria-checked'].some(a => el.getAttribute(a) === 'true') || el.hasAttribute('aria-current'));
-      await button.click({timeout: 8000});
-      changed = wasActive ? null : await waitForChange(page, signature);
-      if (via) await closeRevealed(page, config);
-    }
-    let method = null;
-    if (action.type === 'open_detail') {
-      const candidate = current.internalLinks.find(x => x.text === action.target && isAllowedUrl(x.href, config));
-      method = await openLink(page, action.target, candidate);
-    }
+    const changed = wasActive ? null : await waitForChange(page, signature, changeTimeout);
+    if (page.url() !== before) await settle(page);
+    if (changed !== false) await waitForStable(page);
+    await page.waitForTimeout(config.rateLimitMs || 0);
 
-    await page.waitForTimeout(config.rateLimitMs || 600);
+    // A blocked navigation leaves the tab on the browser's own error page, which says nothing about the site.
     if (!isAllowedUrl(page.url(), config)) {
-      await page.goto(config.url);
-      return {ok: false, code: 'rejected', reason: 'Unexpected external navigation blocked'};
+      await page.goto(config.url, {waitUntil: 'domcontentloaded'}).catch(() => {});
+      await settle(page);
+      return {ok: false, code: 'rejected', reason: 'Navigation blocked by the read-only guard'};
     }
-    const after = await inventoryPage(page, config);
-    return {
-      ok: true,
-      before,
-      via,
-      method,
-      changed,
-      emptyResults: EMPTY_RESULTS.test(after.bodyText),
-      after: {url: after.url, title: after.title, headings: after.heading.slice(0, 4), bodyText: after.bodyText.slice(0, 350), buttons: after.buttons.slice(0, 18)},
-    };
+    return {ok: true, changed, navigated: page.url() !== before, ms: Date.now() - startedAt};
   } catch (e) {
-    return {ok: false, code: classifyFailure(e.message), before, reason: cleanText(e.message, 180)};
+    const blocker = e.message.match(/.{0,120}intercepts pointer events/)?.[0];
+    return {ok: false, code: classifyFailure(e.message), reason: cleanText(blocker || e.message, 200)};
   }
+}
+
+/** Finds the live version of a control from an earlier snapshot. */
+export function locateControl(observation, key, keyOf) {
+  return observation.controls.find(c => keyOf(c) === key && c.classification.allowed) || null;
 }

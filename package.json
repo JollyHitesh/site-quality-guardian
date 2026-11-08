@@ -1,18 +1,20 @@
 {
   "name": "site-quality-guardian",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Independent, self-improving, external website QA auditor",
-  "engines": {"node": ">=20"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "audit": "node src/runner.mjs",
+    "audit": "node src/cli.mjs",
     "test": "node --test",
     "check": "node --test"
   },
   "dependencies": {
-    "playwright": "^1.56.1",
-    "@axe-core/playwright": "^4.10.2"
+    "playwright": "1.65.0",
+    "@axe-core/playwright": "4.14.0"
   },
   "license": "MIT"
 }
