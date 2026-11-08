@@ -113,6 +113,7 @@ function writeMarkdown(report, out) {
     `**Findings:** ${SEVERITIES.map(s => `${s}: ${count(s)}`).join(', ')}  `,
     `**Showtime verification:** ${report.showtimes?.summary?.verdict || 'NOT_VERIFIED'}  `,
     `**Steps executed:** ${report.actions.length}`, '',
+    ...(report.access?.blocked ? [`> **This audit was blocked by the site's protection (${report.access.denied} of ${report.access.attempted} requests refused) and is not valid evidence.**`, ''] : []),
   ];
   for (const f of active) {
     lines.push(`## ${f.severity}: ${f.title}`, `- Status: ${f.status}, ${f.trend || 'NEW'}`, `- Devices: ${f.devices.join(', ') || 'all'}`, `- Pages: ${f.pages.join(', ') || 'n/a'}`);
@@ -210,6 +211,11 @@ function renderHistory(history = []) {
   return `<div class="scroll"><table><thead><tr><th>Run</th><th>Mode</th><th>Status</th><th>P0</th><th>P1</th><th>P2</th><th>New</th><th>Regressed</th><th>Transient</th><th>Showtimes</th><th>Journeys succeeded</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
+function renderAccessBanner(report) {
+  if (!report.access?.blocked) return '';
+  return `<div class="issue" role="alert"><h3 class="P0">This audit was blocked and is not valid evidence</h3><p>The site's protection refused ${esc(report.access.denied)} of ${esc(report.access.attempted)} requests from this network. Failures caused by the block are withheld, and this run taught the agent nothing. Allow the agent through the site's protection, then run it again.</p></div>`;
+}
+
 function writeHtml(report, out) {
   const active = confirmedOrLikely(report);
   const transient = report.findings.filter(f => f.status === 'TRANSIENT');
@@ -223,7 +229,7 @@ function writeHtml(report, out) {
   const blocked = Object.entries(report.safety?.blockedRequests || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'none';
   const model = report.model || {};
   const body = `<header><h1>${esc(report.config.name)} quality report</h1><p class="sub">${esc(report.config.url)} · ${esc(report.finishedAt)} · ${esc(report.mode)} · ${esc(report.status)}</p></header>
-<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
+${renderAccessBanner(report)}<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
 <div class="grid">${SEVERITIES.map(s => metric(count(s), `${s}: ${SEVERITY_MEANING[s]}`, s)).join('')}${metric(transient.length, 'Transient, not counted')}${metric(model.states ?? 0, 'States discovered')}${metric(report.actions.length, 'Browser actions')}</div>
 <section id="findings"><h2>Findings, most urgent first</h2>${findings}${transient.length ? `<details><summary>${transient.length} transient, not counted</summary>${transient.map(renderFinding).join('')}</details>` : ''}${report.resolvedThisRun?.length ? `<p>Resolved in this run: ${esc(report.resolvedThisRun.join('; '))}</p>` : ''}</section>
 <section id="showtimes"><h2>Showtime accuracy</h2>${renderShowtimes(report.showtimes)}</section>

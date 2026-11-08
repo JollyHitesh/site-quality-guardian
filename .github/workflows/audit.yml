@@ -142,6 +142,11 @@ jobs:
             echo "::error::The audit agent did not complete. See the evidence artifact."
             exit 1
           fi
+          blocked="$(jq '.blockedBySite' out/summary.json)"
+          if [ "$blocked" != "0" ]; then
+            echo "::error::The site's bot protection refused this runner, so no valid audit took place. Allow the agent in the site's protection settings."
+            exit 1
+          fi
           blockers="$(jq '.blockers' out/summary.json)"
           if [ "$blockers" != "0" ]; then
             echo "::error::$blockers blocking issue(s) found. See the dashboard."

@@ -85,12 +85,18 @@ function pages(origin, sourceOrigin) {
   };
 }
 
-function startServer() {
+function startServer({challengeAfter = Infinity} = {}) {
   const hits = [];
   let table = {};
+  let served = 0;
   const server = http.createServer((req, res) => {
     hits.push(`${req.method} ${req.url}`);
     const key = req.url.split('?')[0];
+    if (key !== '/robots.txt' && ++served > challengeAfter) {
+      res.writeHead(403, {'content-type': 'text/html', 'cf-mitigated': 'challenge', server: 'cloudflare'});
+      res.end('<title>Just a moment...</title>');
+      return;
+    }
     const body = table[key];
     if (req.method === 'GET' && key === '/robots.txt') { res.writeHead(200, {'content-type': 'text/plain'}); res.end(body); return; }
     if (req.method === 'GET' && body) { res.writeHead(200, {'content-type': 'text/html'}); res.end(body); return; }
@@ -259,6 +265,29 @@ test('a site that is down produces a report and a blocker', {skip: !chromiumRead
   assert.ok(report.findings.some(f => f.severity === 'P0'));
   assert.ok(report.blockers >= 1, 'an outage that persists is a blocker');
   assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')).history.length, 1);
+});
+
+test('a site that refuses the agent is reported as blocked, not as broken', {skip: !chromiumReady && 'Playwright browser or axe not installed', timeout: 180000}, async () => {
+  const {server, hits, port} = await startServer({challengeAfter: 2});
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guardian-int-'));
+  const {code, report} = await runAudit(dir, {...baseConfig(port), maxActions: 20, showtimes: {enabled: false}});
+  server.close();
+  server.closeAllConnections();
+  assert.equal(code, 0, 'being blocked is not an agent failure');
+  assert.equal(report.status, 'BLOCKED_BY_SITE_PROTECTION');
+  assert.equal(report.blockers, 0, 'a block is not a site outage');
+  for (const kind of ['page-http-error', 'page-http', 'broken-internal-link', 'resource-http-error', 'soft-error-page', 'javascript-error']) {
+    assert.equal(report.findings.some(f => f.kind === kind), false, `${kind} must not be reported from a blocked run`);
+  }
+  assert.equal(report.access.blocked, true);
+  assert.ok(report.access.denied >= 1);
+  assert.ok(hits.length < 60, `stops early rather than hammering the site: ${hits.length} requests`);
+  const memory = JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8'));
+  assert.equal(memory.runs, 0, 'a blocked run teaches nothing');
+  assert.equal(Object.keys(memory.findings).length, 0);
+  assert.equal(memory.history.at(-1).status, 'BLOCKED_BY_SITE_PROTECTION');
+  assert.match(fs.readFileSync(path.join(dir, 'out', 'site', 'fixture', 'index.html'), 'utf8'), /not valid evidence/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'out', 'summary.json'), 'utf8')).blockedBySite, 1);
 });
 
 test('every source file parses', () => {

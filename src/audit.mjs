@@ -20,6 +20,10 @@ import {listingFingerprint, checkCommutative, checkEmptyResult, checkFilterSeman
 
 const ENGINES = {chromium, webkit};
 const REVERIFY_LIMIT = 10;
+// When a site's protection refuses the audit, these say nothing about the site itself.
+const ACCESS_SHADOWED = new Set(['page-http-error', 'page-http', 'broken-internal-link', 'resource-http-error', 'request-failed', 'javascript-error', 'console-error', 'soft-error-page', 'blank-page', 'site-unreachable', 'control-no-effect', 'control-obscured', 'filter-empty-unexplained', 'filter-order-dependent', 'filter-semantics', 'state-lost-on-reload', 'search-no-results', 'goal-failed']);
+const ACCESS_BLOCK_RATIO = 0.2;
+const ACCESS_BLOCK_MIN_ATTEMPTS = 5;
 const REVERIFIABLE = new Set(['showtime-data-mismatch', 'control-obscured', 'page-http-error', 'resource-http-error', 'broken-internal-link', 'control-no-effect', 'javascript-error', 'request-failed', 'site-unreachable', 'page-http', 'broken-image']);
 const pathOf = url => { try { return new URL(url).pathname; } catch { return String(url).slice(0, 80); } };
 
@@ -52,6 +56,7 @@ export class Audit {
     this.inspectedTemplates = new Set();
     this.a11yTemplates = new Set();
     this.checksRun = new Set();
+    this.access = {attempted: 0, denied: 0, challenged: 0, landingDenied: false, samples: []};
     this.lessons = [];
     this.ai = createAi(config);
     this.robots = {rules: [], found: false};
@@ -68,6 +73,23 @@ export class Audit {
   }
 
   log(message) { console.log(`[${Math.round(process.uptime())}s] ${this.config.slug}: ${message}`); }
+  /** Records a refusal from the site's own protection, and stops once continuing is pointless. */
+  noteDenied(url, status, headers = {}) {
+    const {access} = this;
+    access.denied++;
+    if (headers['cf-mitigated']) access.challenged++;
+    if (access.samples.length < 6) access.samples.push({path: pathOf(url), status, server: cleanText(headers.server, 30), mitigated: cleanText(headers['cf-mitigated'], 30)});
+    if (this.isAccessBlocked() && access.attempted >= ACCESS_BLOCK_MIN_ATTEMPTS && access.denied / access.attempted >= 0.5 && !this.aborted) {
+      this.blockedEarly = true;
+      this.aborted = true; // no further requests: more would only annoy the site's protection
+    }
+  }
+
+  isAccessBlocked() {
+    const {attempted, denied, landingDenied} = this.access;
+    return landingDenied || (attempted >= ACCESS_BLOCK_MIN_ATTEMPTS && denied / attempted >= ACCESS_BLOCK_RATIO);
+  }
+
   limitation(message) { this.report.errors.push(cleanText(redactText(message), 400)); }
 
   addFinding(ctx, args) {
@@ -332,8 +354,16 @@ export class Audit {
     });
     page.on('response', res => {
       const isDocument = res.request().resourceType() === 'document';
-      if (isDocument && res.frame() === page.mainFrame()) ctx.documentStatus = res.status();
-      if (res.status() < 400 || !isAllowedUrl(res.url(), this.config)) return;
+      const isPage = isDocument && res.frame() === page.mainFrame();
+      if (isPage) ctx.documentStatus = res.status();
+      if (!isAllowedUrl(res.url(), this.config)) return;
+      if (isPage) this.access.attempted++;
+      if ([403, 429].includes(res.status())) {
+        const headers = res.headers();
+        this.noteDenied(res.url(), res.status(), headers);
+        if (headers['cf-mitigated']) return; // a bot challenge is not a defect in the site
+      }
+      if (res.status() < 400) return;
       this.addFinding(ctx, {kind: isDocument ? 'page-http-error' : 'resource-http-error', title: `${isDocument ? 'Page' : 'Request'} ${templateOf(pathOf(res.url()))} returned HTTP ${res.status()}`, severity: isDocument ? 'P1' : 'P2', evidence: {url: res.url().slice(0, 180), status: res.status(), type: res.request().resourceType()}});
     });
     page.on('requestfailed', req => {
@@ -412,6 +442,12 @@ export class Audit {
       if (this.aborted) return;
       const res = await ctx.page.context().request.get(url, {timeout: 12000, failOnStatusCode: false}).catch(() => null);
       this.report.coverage.linksChecked++;
+      if (res) this.access.attempted++;
+      if (res && [403, 429].includes(res.status())) {
+        const headers = res.headers();
+        this.noteDenied(url, res.status(), headers);
+        if (headers['cf-mitigated']) continue;
+      }
       if (res?.status() === 429) { this.limitation('Link check stopped early: site is rate limiting (HTTP 429)'); return; }
       if (res && res.status() >= 400) {
         this.addFinding(ctx, {kind: 'broken-internal-link', title: `Internal link ${p} returns HTTP ${res.status()}`, severity: 'P1', evidence: {url, status: res.status(), linkedFrom: ctx.page.url()}});
@@ -790,6 +826,7 @@ export class Audit {
         return null;
       }
       this.record(ctx, 'navigate', this.config.url, {ok: !!response?.ok(), reason: `HTTP ${response?.status()}`, after: {url: page.url(), title: await page.title()}});
+      if ([403, 429].includes(response?.status())) { this.access.landingDenied = true; return null; }
       if (!response?.ok()) {
         this.addFinding(ctx, {kind: 'page-http', title: `Landing page returned HTTP ${response?.status() || 'unknown'}`, severity: 'P0', evidence: {url: this.config.url, status: response?.status()}});
         return null;
@@ -923,6 +960,13 @@ export class Audit {
   }
 
   finalize() {
+    this.report.access = {...this.access, blocked: this.isAccessBlocked(), ratio: this.access.attempted ? Number((this.access.denied / this.access.attempted).toFixed(2)) : 0};
+    if (this.report.access.blocked) {
+      const before = this.report.findings.length;
+      this.report.findings = this.report.findings.filter(f => !ACCESS_SHADOWED.has(f.kind));
+      this.report.access.findingsWithheld = before - this.report.findings.length;
+      this.limitation(`The site refused ${this.access.denied} of ${this.access.attempted} requests from this network, so this audit is not valid evidence about the site.`);
+    }
     annotateFindings(this.report.findings, this.memory);
     this.report.findings = sortFindings(this.report.findings, this.config.devices[0]);
     this.report.blockers = this.report.findings.filter(f => f.severity === 'P0' && f.status !== 'TRANSIENT').length;
@@ -974,11 +1018,11 @@ export class Audit {
       if (primary) await this.measurePerformance(config.devices[0], primary);
       await this.reverify();
       this.finalize();
-      if (mode === 'intelligent' && report.actions.length && !this.aborted) {
+      if (mode === 'intelligent' && report.actions.length && !this.aborted && !report.access.blocked) {
         await this.aiReview();
         report.ai = this.ai.summary();
       }
-      report.status = this.aborted ? 'TIMED_OUT' : !report.actions.length ? 'NO_ACTIONS' : report.errors.length ? 'COMPLETED_WITH_LIMITATIONS' : 'COMPLETED';
+      report.status = report.access.blocked ? 'BLOCKED_BY_SITE_PROTECTION' : this.aborted ? 'TIMED_OUT' : !report.actions.length ? 'NO_ACTIONS' : report.errors.length ? 'COMPLETED_WITH_LIMITATIONS' : 'COMPLETED';
     } catch (e) {
       report.status = 'FAILED';
       this.limitation(e.stack || e.message);

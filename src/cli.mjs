@@ -42,7 +42,7 @@ for (const config of configs) {
 }
 
 writeDashboardIndex(reports, out);
-const summary = {mode, finishedAt: new Date().toISOString(), blockers: reports.reduce((n, r) => n + r.report.blockers, 0), sites: reports.map(r => ({slug: r.slug, status: r.report.status, blockers: r.report.blockers, findings: r.report.findings.length}))};
+const summary = {mode, finishedAt: new Date().toISOString(), blockers: reports.reduce((n, r) => n + r.report.blockers, 0), blockedBySite: reports.filter(r => r.report.status === 'BLOCKED_BY_SITE_PROTECTION').length, sites: reports.map(r => ({slug: r.slug, status: r.report.status, blockers: r.report.blockers, findings: r.report.findings.length}))};
 fs.writeFileSync(path.join(out, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
 console.log(JSON.stringify(summary));
 process.exit(agentFailed ? 1 : 0);

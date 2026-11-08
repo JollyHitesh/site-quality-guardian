@@ -139,7 +139,7 @@ export function learnFromRun(memory, report, {stateMetrics = {}, lessons = []} =
   const coverage = {
     inspectedTemplates: report.coverage.inspectedTemplates || [], a11yTemplates: report.coverage.a11yTemplates || [], checksRun: report.coverage.checksRun || [],
     controlKeys: report.coverage.controlKeys || [], sources: report.coverage.sources || [], devices: report.config.devices,
-    partial: report.status !== 'COMPLETED' && report.status !== 'COMPLETED_WITH_LIMITATIONS',
+    partial: (report.status !== 'COMPLETED' && report.status !== 'COMPLETED_WITH_LIMITATIONS') || report.access?.denied > 0,
   };
   const opened = {P0: 0, P1: 0, P2: 0, P3: 0};
   let regressions = 0, newFindings = 0, transient = 0;

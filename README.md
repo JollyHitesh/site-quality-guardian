@@ -38,6 +38,8 @@ The agent is read-only by construction, not by good intentions.
 
 **Only audit sites you own or have permission to test.** Do not point it at private, authenticated or personal flows: the dashboard and artifacts can be public.
 
+Sites behind bot protection may refuse GitHub's network. The agent never disguises itself to get past this: it reports the run as `BLOCKED_BY_SITE_PROTECTION`, withholds the failures the block caused, and learns nothing from it. If you run the site, allow requests whose user agent contains `SiteQualityGuardian`.
+
 ## Deployment
 
 You need a GitHub account, and Claude Pro or better for intelligent mode.

@@ -96,6 +96,12 @@ test('published output is scanned, and traces cannot be uploaded', () => {
   assert.equal(steps.includes('--trace'), false, 'CI never records traces');
 });
 
+test('a run blocked by the site goes red after publishing the truth', () => {
+  const steps = job('audit');
+  assert.match(steps, /jq '\.blockedBySite' out\/summary\.json/);
+  assert.ok(steps.indexOf('Upload full evidence') < steps.indexOf('blockedBySite'));
+});
+
 test('CI lints the workflows with actionlint', () => {
   assert.match(ci, /actionlint:\n/);
   assert.match(ci, /rhysd\/actionlint@sha256:/);
