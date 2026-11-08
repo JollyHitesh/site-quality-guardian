@@ -11,6 +11,7 @@ on:
         options:
           - smoke
           - intelligent
+          - ux
       site:
         description: "Site file name without .json, or 'all'. Only 'all' updates the dashboard."
         required: true
@@ -83,15 +84,23 @@ jobs:
         run: |
           if [ -n "$TOKEN" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
 
+      - name: Keep the latest UX report on the dashboard
+        if: env.MODE != 'ux'
+        continue-on-error: true
+        env:
+          PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: node scripts/carry-ux-report.mjs "$PAGES_BASE" sites .previous-ux
+
       - name: Install Claude Code
-        if: env.MODE == 'intelligent' && steps.token.outputs.present == 'true'
+        if: (env.MODE == 'intelligent' || env.MODE == 'ux') && steps.token.outputs.present == 'true'
         run: npm install -g --no-audit --no-fund "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       # The token exists only in this step. Without it, the audit still runs and reports the limitation.
       - name: Run the read-only browser audit
         id: audit
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ env.MODE == 'intelligent' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ (env.MODE == 'intelligent' || env.MODE == 'ux') && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          GUARDIAN_PREVIOUS_UX: .previous-ux
         run: |
           set +e
           node src/cli.mjs --mode "$MODE" --site "$SITE"
