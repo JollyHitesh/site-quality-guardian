@@ -15,12 +15,13 @@ It never needs the audited site's source code, database or credentials. The firs
 | Reasons about usability | Claude proposes visitor goals, steers towards them and reviews screenshots |
 | Separates flukes from defects | Re-tests failures, then tracks each one across runs |
 | Learns | Prioritises what is untested, what is failing, and which sources give answers |
+| Evaluates UX | Scores journeys, visual design and keyboard use, and keeps measured facts apart from expert judgement |
 
 AI visitor journeys end as **SUCCESS**, **FAILURE** or **INCOMPLETE**. Success requires a condition, fixed before the journey began, to be true on the final page, and it must not have been true at the start. Claude's own opinion is never the verdict. Exploring a site never counts as a completed journey.
 
 Each finding is labelled **NEW**, **RECURRING**, **REGRESSED**, **FLAKY** or **TRANSIENT**. A finding only counts as resolved after two runs that actually re-checked the same place.
 
-Modes: **smoke** runs every check except AI. **intelligent** adds Claude and runs only when started by hand. If Claude is unavailable the run still completes and says so.
+Modes: **smoke** runs every check except AI. **intelligent** adds Claude and runs only when started by hand. **ux** runs the [UX Research & Design Auditor](docs/UX-AUDIT.md), also only when started by hand. If Claude is unavailable the run still completes and says so.
 
 Scheduled smoke audits are off until you set the repository variable `GUARDIAN_SCHEDULED_SMOKE` to `true`. This switch has no effect on Claude: scheduled runs are always smoke.
 
@@ -82,6 +83,7 @@ npx playwright install chromium webkit
 npm test
 npm run audit -- --mode smoke --site ov-berlin
 npm run audit -- --mode intelligent --site ov-berlin
+npm run audit -- --mode ux --site ov-berlin
 ```
 
 If a private registry on your machine lacks these packages, add `--registry=https://registry.npmjs.org/` to the install. Local learning state goes in `memory/`, and reports in `out/`.
@@ -95,6 +97,7 @@ If a private registry on your machine lacks these packages, add `--registry=http
 
 ## Further reading
 
+- [UX Research & Design Auditor](docs/UX-AUDIT.md)
 - [docs/AUDIT.md](docs/AUDIT.md): findings from the engineering audit, what is verified, and what remains future work.
 
 MIT licensed. Reports are evidence to investigate, not a guarantee that every defect was found.
