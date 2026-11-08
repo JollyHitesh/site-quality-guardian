@@ -16,9 +16,13 @@ It never needs the audited site's source code, database or credentials. The firs
 | Separates flukes from defects | Re-tests failures, then tracks each one across runs |
 | Learns | Prioritises what is untested, what is failing, and which sources give answers |
 
+AI visitor journeys end as **SUCCESS**, **FAILURE** or **INCOMPLETE**. Success requires a condition, fixed before the journey began, to be true on the final page, and it must not have been true at the start. Claude's own opinion is never the verdict. Exploring a site never counts as a completed journey.
+
 Each finding is labelled **NEW**, **RECURRING**, **REGRESSED**, **FLAKY** or **TRANSIENT**. A finding only counts as resolved after two runs that actually re-checked the same place.
 
-Modes: **smoke** runs every check except AI, daily. **intelligent** adds Claude, weekly. If Claude is unavailable the run still completes and says so.
+Modes: **smoke** runs every check except AI. **intelligent** adds Claude and runs only when started by hand. If Claude is unavailable the run still completes and says so.
+
+Scheduled smoke audits are off until you set the repository variable `GUARDIAN_SCHEDULED_SMOKE` to `true`. This switch has no effect on Claude: scheduled runs are always smoke.
 
 ## Safety
 
@@ -28,6 +32,8 @@ The agent is read-only by construction, not by good intentions.
 - **Control policy.** It never presses anything that looks like buying, booking, signing up, logging in, contacting or saving, in English or German, and rechecks the element at click time.
 - **Consent.** It only ever refuses optional tracking. Analytics requests are blocked, so audits do not distort the site's numbers.
 - **robots.txt** is respected, and the browser identifies itself as `SiteQualityGuardian`.
+- **Sponsored links.** Sponsored `/go/` redirects are never requested. Booking destinations are validated from the `offers` data the site publishes.
+- **Private data.** The browser is anonymous, and a site file cannot supply credentials or sessions. Text sent to Claude and everything published is redacted. Traces are off unless you pass `--trace` locally, and CI blocks publication if a final scan finds a secret or a trace file.
 - **Prompt injection.** Claude runs with no tools, in an empty directory, and only with the variables it needs. Page text is fenced as untrusted, and every action Claude proposes is re-validated. Text from Claude is bounded and stripped of links before it reaches the report or memory.
 
 Do not point it at private, authenticated or personal flows: the dashboard and artifacts can be public.
@@ -36,14 +42,14 @@ Do not point it at private, authenticated or personal flows: the dashboard and a
 
 You need a GitHub account, and Claude Pro or better for intelligent mode.
 
-1. Review the changes and merge them to `main`.
-2. Publish the repository with `./scripts/publish.sh`. This creates a **public** repository, which is what makes standard runners free.
-3. On your own machine, run `claude setup-token`. Add the result under **Settings → Secrets and variables → Actions** as `CLAUDE_CODE_OAUTH_TOKEN`. Do not add `ANTHROPIC_API_KEY`.
-4. In **Settings → Pages**, set the source to **GitHub Actions**.
-5. In **Actions → Audit external website → Run workflow**, choose **smoke**. When that passes, run **intelligent**.
-6. Open the Pages URL on your iPad. Add it to the home screen for one-tap access.
+1. Merge the changes to `main` and push to a **public** repository, which is what makes standard runners free.
+2. On your own machine, run `claude setup-token`. Add the result under **Settings → Secrets and variables → Actions** as `CLAUDE_CODE_OAUTH_TOKEN`. Do not add `ANTHROPIC_API_KEY`.
+3. In **Settings → Pages**, set the source to **GitHub Actions**.
+4. In **Actions → Audit external website → Run workflow**, choose **smoke**. When that passes, run **intelligent**.
+5. Open the Pages URL on your iPad. Add it to the home screen for one-tap access.
+6. To schedule smoke audits, add the repository variable `GUARDIAN_SCHEDULED_SMOKE` with the value `true`.
 
-Scheduled runs then happen on their own. GitHub pauses schedules after 60 days without repository activity, and a one-click re-enable appears on the Actions page. The setup token lasts one year.
+GitHub pauses schedules after 60 days without repository activity, and a one-click re-enable appears on the Actions page. The setup token lasts one year.
 
 ## Adding a website
 

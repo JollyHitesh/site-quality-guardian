@@ -16,9 +16,10 @@ on:
         required: true
         type: string
         default: all
+  # Deterministic only, and off until the repository variable GUARDIAN_SCHEDULED_SMOKE is 'true'.
+  # Claude-powered audits run only by manual dispatch.
   schedule:
     - cron: '37 5 * * *' # daily baseline, UTC
-    - cron: '41 6 * * 0' # weekly AI exploration, UTC
 
 # Each job below asks for only what it needs.
 permissions: {}
@@ -32,6 +33,7 @@ env:
 
 jobs:
   audit:
+    if: ${{ github.event_name != 'schedule' || vars.GUARDIAN_SCHEDULED_SMOKE == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 75
     permissions:
@@ -40,7 +42,7 @@ jobs:
       completed: ${{ steps.audit.outputs.completed }}
       publish: ${{ steps.audit.outputs.publish }}
     env:
-      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || github.event.schedule == '41 6 * * 0' && 'intelligent' || 'smoke' }}
+      MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'smoke' }}
       SITE: ${{ inputs.site || 'all' }}
     steps:
       - name: Check out the agent (never the target website's source)
@@ -94,6 +96,12 @@ jobs:
           set +e
           node src/cli.mjs --mode "$MODE" --site "$SITE"
           code=$?
+          # Runs while the token is present, so an exact match would be caught. Reports only file names.
+          if ! node scripts/scan-public-output.mjs out memory; then
+            rm -rf out memory
+            echo "exit_code=70" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           set -e
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
           if [ -f out/summary.json ]; then echo "completed=true" >> "$GITHUB_OUTPUT"; fi
@@ -104,7 +112,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: guardian-${{ github.run_number }}
-          path: out/
+          path: |
+            out/
+            !out/**/trace-*.zip
           retention-days: 14
           if-no-files-found: warn
 
@@ -176,6 +186,7 @@ jobs:
             git -C .state rm -rfq --ignore-unmatch .
           fi
           mkdir -p .state/memory
+          rm -f .state/memory/state.json
           cp .clean/*.json .state/memory/
           git -C .state add memory
           if ! git -C .state diff --cached --quiet; then

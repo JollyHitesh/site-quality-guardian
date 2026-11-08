@@ -44,7 +44,7 @@ test('the Claude token is present only where needed', () => {
 
 test('every action is pinned to a commit', () => {
   for (const file of [audit, ci]) {
-    for (const line of file.split('\n').filter(l => /uses:/.test(l))) assert.match(line, /@[0-9a-f]{40} # v/, line);
+    for (const line of file.split('\n').filter(l => /uses:/.test(l))) assert.match(line, /@[0-9a-f]{40} # v|docker:\/\/[^@]+@sha256:[0-9a-f]{64} # /, line);
   }
 });
 
@@ -70,6 +70,58 @@ test('reports and memory are kept even when the run fails', () => {
   assert.ok(steps.indexOf('Package the dashboard') < steps.indexOf('Fail the run'));
   assert.match(job('persist-memory'), /!cancelled\(\)/);
   assert.match(job('deploy-dashboard'), /!cancelled\(\)/);
+});
+
+test('Claude never runs on a schedule', () => {
+  const crons = audit.match(/- cron:/g);
+  assert.equal(crons.length, 1, 'one scheduled audit only');
+  const mode = audit.match(/MODE: (.*)/)[1];
+  assert.match(mode, /event_name == 'workflow_dispatch' && inputs\.mode \|\| 'smoke'/);
+  assert.equal(/schedule.*intelligent/.test(mode), false);
+  assert.match(audit, /- intelligent/, 'manual runs can still choose it');
+});
+
+test('the scheduled deterministic audit has its own switch', () => {
+  assert.match(audit, /if: \$\{\{ github\.event_name != 'schedule' \|\| vars\.GUARDIAN_SCHEDULED_SMOKE == 'true' \}\}/);
+  assert.equal(audit.includes('vars.GUARDIAN_SCHEDULED_INTELLIGENT'), false);
+  assert.ok(audit.indexOf('workflow_dispatch') < audit.indexOf('GUARDIAN_SCHEDULED_SMOKE'));
+});
+
+test('published output is scanned, and traces cannot be uploaded', () => {
+  const steps = job('audit');
+  assert.match(steps, /node scripts\/scan-public-output\.mjs out memory/);
+  assert.ok(steps.indexOf('scan-public-output') < steps.indexOf('Upload full evidence'));
+  assert.match(steps, /rm -rf out memory/);
+  assert.match(steps, /!out\/\*\*\/trace-\*\.zip/);
+  assert.equal(steps.includes('--trace'), false, 'CI never records traces');
+});
+
+test('CI lints the workflows with actionlint', () => {
+  assert.match(ci, /actionlint:\n/);
+  assert.match(ci, /rhysd\/actionlint@sha256:/);
+});
+
+test('the output scanner reports problems without printing secrets', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guardian-scan-'));
+  const fakeKey = ['sk', 'ant', 'abcdefghijklmnop1234'].join('-');
+  fs.writeFileSync(path.join(root, 'report.json'), JSON.stringify({leak: fakeKey}));
+  const leak = spawnSync(process.execPath, ['scripts/scan-public-output.mjs', root], {encoding: 'utf8'});
+  assert.equal(leak.status, 1);
+  assert.match(leak.stderr, /anthropic-key/);
+  assert.equal(`${leak.stdout}${leak.stderr}`.includes(fakeKey), false);
+
+  fs.writeFileSync(path.join(root, 'report.json'), '{"ok":true}');
+  assert.equal(spawnSync(process.execPath, ['scripts/scan-public-output.mjs', root], {encoding: 'utf8'}).status, 0);
+
+  fs.writeFileSync(path.join(root, 'note.txt'), 'value is exact-token-value-123');
+  const exact = spawnSync(process.execPath, ['scripts/scan-public-output.mjs', root], {encoding: 'utf8', env: {...process.env, CLAUDE_CODE_OAUTH_TOKEN: 'exact-token-value-123'}});
+  assert.equal(exact.status, 1);
+  assert.match(exact.stderr, /exact-value:CLAUDE_CODE_OAUTH_TOKEN/);
+  assert.equal(`${exact.stdout}${exact.stderr}`.includes('exact-token-value-123'), false);
+
+  fs.rmSync(path.join(root, 'note.txt'));
+  fs.writeFileSync(path.join(root, 'trace-mobile.zip'), 'x');
+  assert.equal(spawnSync(process.execPath, ['scripts/scan-public-output.mjs', root], {encoding: 'utf8'}).status, 1, 'traces cannot be published');
 });
 
 test('the memory sanitizer cleans files and refuses unexpected names', () => {

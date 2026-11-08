@@ -35,13 +35,7 @@ Run the checks yourself before relying on them. Results as of the final run are 
 
 Automated tests use a fixture site with planted defects and traps. They assert that writes, purchases, popups, robots-disallowed pages and excluded paths never reach the server, including when Claude requests them.
 
-**Not executed here:** the workflows have not run on GitHub, because publishing was not authorized. `actionlint` was not run either. `tests/workflow.test.mjs` checks permissions, pinning and secret scope, but it does not replace a linter or a real run.
-
-To lint the workflows locally:
-
-```sh
-brew install actionlint && actionlint
-```
+`actionlint` runs in GitHub CI. `tests/workflow.test.mjs` also checks permissions, pinning, secret scope and scheduling on every test run.
 
 ## What is implemented, and what is not
 
@@ -51,13 +45,15 @@ brew install actionlint && actionlint
 | Site model | States and transitions, persisted baselines | Visual diagrams and path mining |
 | Filter testing | Order, reload, empty states, declared meanings | Three-way combinations and date boundaries |
 | Showtimes | Structured data against page and clock. Source pages compared by text. Sources ranked by usefulness | Per-cinema adapters to raise match rates |
-| Booking links | Inspected on the page, never followed | Sampling redirects, once you decide it is acceptable (see below) |
-| Visual review | Claude reviews screenshots | Pixel baselines |
+| Booking links | Sponsored redirects never requested. Destinations validated from published `offers` data | Confirming each destination page matches the screening |
+| Visual review | Claude reviews screenshots of public pages only | Pixel baselines |
+| AI journeys | Success needs a pre-declared condition verified on the page. Turns adapt to progress | Multi-page journeys that compare several screenings |
 | Regressions | Same-run retry, cross-run lifecycle, baseline anomalies | Statistical flake modelling |
 | Dashboard | iPad-friendly and multi-site with history | Trend charts |
 
-### Open decisions for the site owner
+### Decisions recorded
 
-- **Booking links.** Links run through `/go/...` redirects marked as sponsored, and following them could count as clicks. They are not followed, so the booking destination stays `NOT_VERIFIED`. Following them is not implemented, and would need your decision first.
-- **AI training signal.** The site's `robots.txt` sets `ai-train=no`. Screenshots are sent to Claude in intelligent mode. If you audit a site you do not own, check your Claude privacy settings so this content is not used for training, or use smoke mode.
+- **Sponsored links.** `/go/` redirects are never requested, because following them could count as clicks. Booking destinations are checked from the published `offers` data instead, so the booking status reads `STATIC_ONLY`.
+- **Screenshots.** Claude may analyze screenshots of public pages. It never receives credentials, session data or personal information: the browser is anonymous, text is redacted before sending, and a page with a visible password field or a filled personal field is not captured.
+- **Scheduling.** Claude-powered audits run only by hand until one has succeeded on GitHub. Scheduled smoke audits have their own switch.
 - **Source coverage.** Many cinema sites return 403, load listings with JavaScript or POST, or list only part of the programme. These stay `UNAVAILABLE` or inconclusive. Absence never counts as a mismatch.
