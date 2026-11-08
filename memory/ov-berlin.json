@@ -1,8 +1,8 @@
 {
  "schemaVersion": 2,
  "site": "ov-berlin",
- "runs": 0,
- "lastRun": null,
+ "runs": 1,
+ "lastRun": "2026-11-08T15:27:26.621Z",
  "history": [
   {
    "at": "2026-11-08T13:12:37.568Z",
@@ -18,15 +18,1068 @@
    "aiCalls": 0,
    "lcpMs": 0,
    "goals": {}
+  },
+  {
+   "at": "2026-11-08T15:27:26.621Z",
+   "mode": "smoke",
+   "status": "COMPLETED",
+   "actions": 66,
+   "states": 29,
+   "open": {
+    "P0": 0,
+    "P1": 2,
+    "P2": 15,
+    "P3": 5
+   },
+   "newFindings": 22,
+   "regressions": 0,
+   "transient": 0,
+   "showtimes": "MISMATCHES_FOUND",
+   "aiCalls": 0,
+   "lcpMs": 2252,
+   "goals": {
+    "total": 0,
+    "SUCCESS": 0,
+    "FAILURE": 0,
+    "INCOMPLETE": 0
+   }
   }
  ],
  "coverage": {
-  "controls": {},
-  "paths": {}
+  "controls": {
+   "mobile|button|filters": 1,
+   "mobile|button|view: list": 1,
+   "mobile|button|english subtitles (omeu)": 1,
+   "mobile|button|evening": 1,
+   "mobile|button|mitte": 1,
+   "mobile|button|tomorrow": 1,
+   "mobile|button|weekend": 1,
+   "mobile|button|map": 1,
+   "mobile|button|cards": 1,
+   "mobile|button|week": 1,
+   "mobile|button|open navigation menu": 1,
+   "mobile|button|what does this mean?": 1,
+   "mobile|button|show calendar": 1,
+   "mobile|button|close filters": 1,
+   "mobile|button|close menu": 1,
+   "mobile-small|button|hide calendar": 1,
+   "mobile-small|searchbox|try \"english sunday\" or \"omu mitte\"…": 1,
+   "mobile-small|button|filters (1)": 1,
+   "mobile-small|button|view: map": 1,
+   "mobile-small|button|view: cards": 1,
+   "mobile-small|button|+4 more": 1,
+   "mobile-webkit|button|+3 more": 1,
+   "mobile-webkit|button|+1 more": 1,
+   "mobile-webkit|button|+6 more": 1,
+   "mobile-webkit|button|+2 more": 1,
+   "mobile-webkit|button|view: week": 1,
+   "mobile-webkit|button|kids under 6": 1,
+   "desktop|button|switch to list view": 1,
+   "desktop|button|switch to cards view": 1,
+   "desktop|button|switch to map view": 1,
+   "desktop|button|switch to week view": 1,
+   "desktop|button|english audio": 1,
+   "desktop|button|german subtitles": 1,
+   "mobile|button|english": 3,
+   "mobile|button|german subtitles (omu)": 3,
+   "mobile|button|tonight": 6
+  },
+  "paths": {
+   "/": 1,
+   "/movies/sundays": 1,
+   "/cinemas/hackesche-hoefe-kino": 1,
+   "/cinemas": 1,
+   "/guide": 1,
+   "/blog": 1,
+   "/datenschutz": 1,
+   "/english-movies-berlin": 1,
+   "/english-movies-berlin-today": 1,
+   "/movies/naza": 1,
+   "/cinemas/acud-kino": 1
+  }
  },
- "states": {},
- "baselines": {},
- "findings": {},
+ "states": {
+  "/#3317925a37": 1,
+  "/#9bc347628d": 1,
+  "/#24e33b784d": 1,
+  "/#aee2f93831": 1,
+  "/#49411021db": 1,
+  "/#a8d4e21b99": 1,
+  "/#46e5828175": 1,
+  "/#1d407a0eaf": 1,
+  "/#01a20c624f": 1,
+  "/#76fd0e2d83": 1,
+  "/#3d211e2e95": 1,
+  "/#b5b935dc85": 1,
+  "/#099a3dc4d3": 1,
+  "/#77651d79e4": 1,
+  "/#d9c7e459b8": 1,
+  "/#5fa3c408c8": 1,
+  "/#e22160dacf": 1,
+  "/#d65a483d7e": 1,
+  "/#b14b278456": 1,
+  "/#3ea848cf73": 1,
+  "/#676c8635a5": 1,
+  "/#4f0a0012ea": 1,
+  "/#21839a6f84": 1,
+  "/#3797bd3b4e": 1,
+  "/#a6684bc4a1": 1,
+  "/#0a9ebc58ed": 1,
+  "/#452ac49434": 1,
+  "/#0c8153147a": 1,
+  "/#ff0637cc90": 1
+ },
+ "baselines": {
+  "mobile|/#3317925a37": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8146
+   ],
+   "controlCount": [
+    339
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#9bc347628d": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8785
+   ],
+   "controlCount": [
+    397
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#24e33b784d": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8166
+   ],
+   "controlCount": [
+    343
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#aee2f93831": {
+   "itemCount": [
+    34
+   ],
+   "textLength": [
+    8234
+   ],
+   "controlCount": [
+    361
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#49411021db": {
+   "itemCount": [
+    31
+   ],
+   "textLength": [
+    8015
+   ],
+   "controlCount": [
+    350
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#a8d4e21b99": {
+   "itemCount": [
+    32
+   ],
+   "textLength": [
+    8174
+   ],
+   "controlCount": [
+    357
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#46e5828175": {
+   "itemCount": [
+    22
+   ],
+   "textLength": [
+    7337
+   ],
+   "controlCount": [
+    312
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#1d407a0eaf": {
+   "itemCount": [
+    34
+   ],
+   "textLength": [
+    8219
+   ],
+   "controlCount": [
+    359
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#01a20c624f": {
+   "itemCount": [
+    24
+   ],
+   "textLength": [
+    7757
+   ],
+   "controlCount": [
+    312
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#76fd0e2d83": {
+   "itemCount": [
+    42
+   ],
+   "textLength": [
+    8053
+   ],
+   "controlCount": [
+    331
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#3d211e2e95": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4948
+   ],
+   "controlCount": [
+    147
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#b5b935dc85": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4519
+   ],
+   "controlCount": [
+    174
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#099a3dc4d3": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    9687
+   ],
+   "controlCount": [
+    351
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "mobile|/#77651d79e4": {
+   "itemCount": [
+    6
+   ],
+   "textLength": [
+    25614
+   ],
+   "controlCount": [
+    500
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#d9c7e459b8": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8241
+   ],
+   "controlCount": [
+    349
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#5fa3c408c8": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8280
+   ],
+   "controlCount": [
+    340
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#e22160dacf": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    8223
+   ],
+   "controlCount": [
+    348
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#d65a483d7e": {
+   "itemCount": [
+    10
+   ],
+   "textLength": [
+    5836
+   ],
+   "controlCount": [
+    190
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#b14b278456": {
+   "itemCount": [
+    10
+   ],
+   "textLength": [
+    6485
+   ],
+   "controlCount": [
+    249
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#3ea848cf73": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4539
+   ],
+   "controlCount": [
+    178
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-small|/#676c8635a5": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    9707
+   ],
+   "controlCount": [
+    355
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "mobile-webkit|/#4f0a0012ea": {
+   "itemCount": [
+    6
+   ],
+   "textLength": [
+    25634
+   ],
+   "controlCount": [
+    500
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile-webkit|/#21839a6f84": {
+   "itemCount": [
+    8
+   ],
+   "textLength": [
+    6114
+   ],
+   "controlCount": [
+    224
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#3797bd3b4e": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    9626
+   ],
+   "controlCount": [
+    377
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  },
+  "desktop|/#a6684bc4a1": {
+   "itemCount": [
+    41
+   ],
+   "textLength": [
+    18347
+   ],
+   "controlCount": [
+    424
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#0a9ebc58ed": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    4758
+   ],
+   "controlCount": [
+    201
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#452ac49434": {
+   "itemCount": [
+    50
+   ],
+   "textLength": [
+    9749
+   ],
+   "controlCount": [
+    500
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#0c8153147a": {
+   "itemCount": [
+    6
+   ],
+   "textLength": [
+    6004
+   ],
+   "controlCount": [
+    201
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "desktop|/#ff0637cc90": {
+   "itemCount": [
+    32
+   ],
+   "textLength": [
+    8974
+   ],
+   "controlCount": [
+    341
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "🎬 OPENING THIS WEEK": 1
+   }
+  }
+ },
+ "findings": {
+  "showtime-source-mismatch-fc56760c": {
+   "title": "Showtime differs from the cinema's site: CineStar Berlin - CUBIX am Alexanderplat",
+   "kind": "showtime-source-mismatch",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "https://www.cinestar.de/kino-berlin-cubix-am-alexanderplatz",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "layout-overflow-bb6aa037": {
+   "title": "Content is wider than the screen, causing sideways scrolling",
+   "kind": "layout-overflow",
+   "severity": "P1",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile-small"
+   ]
+  },
+  "primary-tap-target-small-f53dad21": {
+   "title": "Main call-to-action links are under 44px tall on phones",
+   "kind": "primary-tap-target-small",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/cinemas/:slug"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "input-zoom-ios-fb1ef67c": {
+   "title": "Form fields under 16px make iPhones zoom in on focus",
+   "kind": "input-zoom-ios",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/cinemas",
+    "/blog",
+    "/english-movies-berlin",
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "sticky-coverage-6d9817fd": {
+   "title": "Sticky bars cover more than 30% of the screen on phones",
+   "kind": "sticky-coverage",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "sticky-coverage-landscape-a16bda46": {
+   "title": "Sticky bars cover more than 50% of the screen in landscape",
+   "kind": "sticky-coverage-landscape",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "tap-target-too-small-7823b132": {
+   "title": "Touch targets below the 24px minimum and crowded by neighbours",
+   "kind": "tap-target-too-small",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/movies/:slug",
+    "/"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "booking-destination-missing-e31513ed": {
+   "title": "Upcoming screening publishes no ticket destination",
+   "kind": "booking-destination-missing",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/movies/:slug"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "broken-image-d2e21d93": {
+   "title": "One or more images failed to load",
+   "kind": "broken-image",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/cinemas",
+    "/cinemas/:slug"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit",
+    "desktop"
+   ]
+  },
+  "accessibility-color-contrast-ad653efd": {
+   "title": "Accessibility: Elements must meet minimum color contrast ratio thresholds",
+   "kind": "accessibility-color-contrast",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/blog"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "accessibility-target-size-3fd910aa": {
+   "title": "Accessibility: All touch targets must be 24px large, or leave sufficient space",
+   "kind": "accessibility-target-size",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/english-movies-berlin",
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "accessibility-link-in-text-block-30d37e9c": {
+   "title": "Accessibility: Links must be distinguishable without relying on color",
+   "kind": "accessibility-link-in-text-block",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "state-lost-on-reload-b7ef63ca": {
+   "title": "Reloading a filtered page loses the filter",
+   "kind": "state-lost-on-reload",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "source-link-broken-ca960df1": {
+   "title": "Cinema website link is dead: Hackesche Höfe Kino",
+   "kind": "source-link-broken",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "https://www.hoefekino.de/programm",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "source-link-broken-eecaa875": {
+   "title": "Cinema website link is dead: Sputnik Kino am Südstern",
+   "kind": "source-link-broken",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "https://www.sputnik-kino.com/programm",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "lazy-lcp-image-f7e0dd9d": {
+   "title": "The largest visible image is lazy-loaded, delaying first view",
+   "kind": "lazy-lcp-image",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "accessibility-label-content-name-mismatch-2755c996": {
+   "title": "Accessibility: Elements must have their visible text as part of their accessible name",
+   "kind": "accessibility-label-content-name-mismatch",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/movies/:slug"
+   ],
+   "devices": [
+    "desktop"
+   ]
+  },
+  "csp-blocked-2c5f9f77": {
+   "title": "Content-Security-Policy blocks requests to static.cloudflareinsights.com",
+   "kind": "csp-blocked",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/cinemas",
+    "/guide",
+    "/blog",
+    "/datenschutz",
+    "/english-movies-berlin",
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "desktop"
+   ]
+  },
+  "tap-target-comfort-bb47ebfc": {
+   "title": "Touch targets under the recommended 44px height",
+   "kind": "tap-target-comfort",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/cinemas",
+    "/guide",
+    "/blog",
+    "/datenschutz",
+    "/english-movies-berlin",
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "small-text-b9ba4810": {
+   "title": "Text smaller than 12px is hard to read on phones",
+   "kind": "small-text",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/cinemas",
+    "/guide",
+    "/blog",
+    "/datenschutz",
+    "/english-movies-berlin",
+    "/english-movies-berlin-today"
+   ],
+   "devices": [
+    "mobile",
+    "mobile-small",
+    "mobile-webkit"
+   ]
+  },
+  "performance-tbtMs-ea508dbb": {
+   "title": "Total Blocking Time is worse than recommended on a throttled phone",
+   "kind": "performance-tbtMs",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "performance-cls-02aaae68": {
+   "title": "Cumulative Layout Shift is worse than recommended on a throttled phone",
+   "kind": "performance-cls",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-08T15:27:26.621Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 1,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "1",
+   "pages": [
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  }
+ },
  "lessons": [],
- "sources": {}
+ "sources": {
+  "www.hoefekino.de": {
+   "attempts": 1,
+   "useful": 0
+  },
+  "zoopalast.premiumkino.de": {
+   "attempts": 1,
+   "useful": 0
+  },
+  "www.yorck.de": {
+   "attempts": 1,
+   "useful": 1
+  },
+  "www.sputnik-kino.com": {
+   "attempts": 1,
+   "useful": 0
+  },
+  "www.cinemaxx.de": {
+   "attempts": 1,
+   "useful": 1
+  },
+  "www.cinestar.de": {
+   "attempts": 1,
+   "useful": 1
+  }
+ }
 }
