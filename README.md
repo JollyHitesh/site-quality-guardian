@@ -36,7 +36,7 @@ The agent is read-only by construction, not by good intentions.
 - **Private data.** The browser is anonymous, and a site file cannot supply credentials or sessions. Text sent to Claude and everything published is redacted. Traces are off unless you pass `--trace` locally, and CI blocks publication if a final scan finds a secret or a trace file.
 - **Prompt injection.** Claude runs with no tools, in an empty directory, and only with the variables it needs. Page text is fenced as untrusted, and every action Claude proposes is re-validated. Text from Claude is bounded and stripped of links before it reaches the report or memory.
 
-Do not point it at private, authenticated or personal flows: the dashboard and artifacts can be public.
+**Only audit sites you own or have permission to test.** Do not point it at private, authenticated or personal flows: the dashboard and artifacts can be public.
 
 ## Deployment
 
