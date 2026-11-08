@@ -122,5 +122,9 @@
         "why": "Next.js server action behind the week view; the body holds only dates and filter values."
       }
     ]
+  },
+  "booking": {
+    "redirectPrefix": "/go/",
+    "requireSponsoredRel": true
   }
 }

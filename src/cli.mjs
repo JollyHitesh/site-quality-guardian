@@ -36,7 +36,7 @@ let agentFailed = false;
 for (const config of configs) {
   const siteOut = path.join(out, config.slug);
   const memoryFile = flag('--memory', path.join('memory', `${config.slug}.json`));
-  const report = await new Audit({config, mode, out: siteOut, memoryFile}).run();
+  const report = await new Audit({config, mode, out: siteOut, memoryFile, trace: argv.includes('--trace')}).run();
   reports.push({slug: config.slug, name: config.name, url: config.url, out: siteOut, report});
   if (report.status === 'FAILED' || report.status === 'NO_ACTIONS') agentFailed = true;
 }

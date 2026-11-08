@@ -105,6 +105,7 @@ function collectObservation() {
     headings: [...document.querySelectorAll('h1,h2')].filter(visible).slice(0, 12).map(x => clean(x.innerText).slice(0, 100)),
     controls,
     text: text.slice(0, 4000),
+    fullText: text.slice(0, 120000), // only for local checks; prompts and reports use the short text
     textLength: text.length,
     active: activeControls.map(nameOf).filter(Boolean).slice(0, 25),
     expanded: expandedControls.map(nameOf).filter(Boolean).slice(0, 12),

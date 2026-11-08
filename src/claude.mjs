@@ -7,18 +7,28 @@ import os from 'node:os';
 import path from 'node:path';
 import {DEVICE_PROFILES} from './config.mjs';
 import {cleanText} from './security.mjs';
+import {redactText} from './redact.mjs';
+import {CHECK_KINDS, ALSO_REQUIRE} from './goals.mjs';
+
+// Held in memory and removed from the environment so browser processes never inherit it.
+const subscriptionToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
 
 const stringField = {type: 'string'};
 const GOALS_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['goals'],
-  properties: {goals: {type: 'array', maxItems: 4, items: {type: 'object', additionalProperties: false, required: ['title', 'why', 'successLooksLike'], properties: {title: stringField, why: stringField, successLooksLike: stringField}}}},
+  properties: {goals: {type: 'array', maxItems: 5, items: {type: 'object', additionalProperties: false, required: ['title', 'why', 'estimatedTurns', 'successCheck'], properties: {
+    title: stringField, why: stringField, estimatedTurns: {type: 'integer'},
+    successCheck: {type: 'object', additionalProperties: false, required: ['kind', 'value', 'alsoRequire'], properties: {kind: {type: 'string', enum: CHECK_KINDS}, value: stringField, alsoRequire: {type: 'string', enum: ALSO_REQUIRE}}},
+  }}}},
 };
 const STEP_SCHEMA = {
-  type: 'object', additionalProperties: false, required: ['status', 'reasoning', 'actions'],
+  type: 'object', additionalProperties: false, required: ['status', 'reasoning', 'actions', 'evidenceQuote'],
   properties: {
     status: {type: 'string', enum: ['continue', 'achieved', 'blocked']},
     reasoning: stringField,
     problem: stringField,
+    evidenceQuote: stringField,
     actions: {type: 'array', maxItems: 3, items: {type: 'object', additionalProperties: false, required: ['ref', 'why'], properties: {ref: stringField, value: stringField, why: stringField}}},
   },
 };
@@ -61,9 +71,11 @@ class CliError extends Error {
 
 /** Only what the CLI needs. API keys are left out so a subscription is never silently bypassed. */
 export function childEnvironment(env = process.env) {
-  const allowed = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR', 'SHELL', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'CLAUDE_CONFIG_DIR', 'CLAUDE_CODE_OAUTH_TOKEN'];
+  const allowed = ['PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR', 'SHELL', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'CLAUDE_CONFIG_DIR'];
   const child = {CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1'};
   for (const name of allowed) if (env[name]) child[name] = env[name];
+  const token = env.CLAUDE_CODE_OAUTH_TOKEN || subscriptionToken;
+  if (token) child.CLAUDE_CODE_OAUTH_TOKEN = token;
   if (env.GUARDIAN_ALLOW_API_KEY === '1' && env.ANTHROPIC_API_KEY) child.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
   return child;
 }
@@ -135,7 +147,7 @@ export function createAi(config, {runner = runCli} = {}) {
 /** Wraps page-derived data in a block whose end cannot be forged by the page. */
 export function untrusted(data, max = 9000) {
   const nonce = crypto.randomBytes(8).toString('hex');
-  const text = JSON.stringify(data).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ');
+  const text = redactText(JSON.stringify(data)).replace(/[\u0000-\u001f\u2028\u2029]/g, ' ');
   return `<untrusted_page_data id="${nonce}">\n${text.slice(0, max)}\n</untrusted_page_data id="${nonce}">`;
 }
 
@@ -151,14 +163,14 @@ export function controlsForPrompt(controls, limit = 70) {
   }));
 }
 
-export async function proposeGoals(ai, {config, siteModel, memoryNotes, count}) {
-  const prompt = `Propose ${count} realistic visitor goals to test next. Each must be doable using only filters, search, navigation and reading, and must never involve buying, booking, signing up or logging in. Favour the site's business priorities, then flows that the coverage notes show are weak or that have open defects. Do not propose goals like those already covered recently.\n\nSite (trusted configuration): ${JSON.stringify(describeSite(config))}\n\nObserved site model and history:\n${untrusted({siteModel, memoryNotes}, 7000)}`;
+export async function proposeGoals(ai, {config, siteModel, memoryNotes, landing, count}) {
+  const prompt = `Propose ${count} realistic visitor journeys to test next, favouring the site's business priorities and then flows that are weak or have open defects.\n\nEvery journey must be:\n- ONE objective a visitor would have, doable in a few steps using only filters, search, navigation and reading. Do not combine several objectives.\n- Finished by reaching information. Buying, booking, signing up and logging in are impossible here, and booking links are never followed. A journey can end by finding a booking link on the page.\n\nGive "successCheck", a condition the software will test on the final page. Kinds: filter-active (value: the name of a filter that must be switched on), page-path-contains (value: part of the URL path or query, such as a detail page path), page-text-contains (value: an exact phrase that appears only as the result of the journey), listing-at-least (value: a number of listed items), booking-link-visible (value: empty string). Set "alsoRequire" to booking-link, non-empty-listing or none, to demand a second condition on the same page. Filter journeys should use filter-active with non-empty-listing. Journeys to a detail page should use page-path-contains, adding booking-link when a ticket option is the point. Do not use a button label as the phrase. The whole check MUST be false on the landing page shown below, where bookingLinksVisible says whether booking links already appear, and it must only become true if the journey worked. Set "estimatedTurns" between 2 and 4.\n\nSite (trusted configuration): ${JSON.stringify(describeSite(config))}\n\nObserved site model, landing page and history:\n${untrusted({landing, siteModel, memoryNotes}, 9000)}`;
   const result = await ai.ask(prompt, GOALS_SCHEMA);
-  return (result.goals || []).slice(0, count).map(g => ({title: cleanText(g.title, 140), why: cleanText(g.why, 240), successLooksLike: cleanText(g.successLooksLike, 240)}));
+  return (result.goals || []).slice(0, count).map(g => ({title: cleanAiText(g.title, 140), why: cleanAiText(g.why, 240), estimatedTurns: g.estimatedTurns, successCheck: {kind: g.successCheck?.kind, value: cleanAiText(g.successCheck?.value, 100), alsoRequire: g.successCheck?.alsoRequire || 'none'}}));
 }
 
-export async function planNextStep(ai, {goal, device, observation, controls, history}) {
-  const prompt = `Act as a visitor on ${device} pursuing the goal. Choose up to 3 next actions, using only "ref" values from the list. For a "search" control give "value", a short query. For a "select" control give "value", an option label. Set status "achieved" if the goal is fulfilled on the current page, or "blocked" if a real visitor would be stuck, and then describe what went wrong in "problem".\n\nGoal (trusted): ${JSON.stringify(goal)}\n\nCurrent observation:\n${untrusted({url: observation.url, title: observation.title, headings: observation.headings, listing: {count: observation.listing.count, sample: observation.listing.items.slice(0, 8)}, text: observation.text.slice(0, 2200), controls, history}, 11000)}`;
+export async function planNextStep(ai, {goal, device, observation, controls, catalog, history, turnsLeft, stalled, bookingLinks}) {
+  const prompt = `Act as a visitor on ${device} pursuing the goal. You have ${turnsLeft} planning turn(s) left, so take the most direct path and do not explore. Choose up to 3 next actions, using only "ref" values from the lists. "controls" are on screen. "elsewhere" are controls behind drawers: use their refs directly and the software will open the drawer. For a "search" control give "value", a short query. For a "select" control give "value", an option label.\nSet status "achieved" only if the goal's successCheck is true on the current page, or "blocked" if a real visitor would be stuck, and then explain in "problem". Set "evidenceQuote" to an exact phrase copied from the current page that supports your status, or an empty string while status is "continue".${stalled ? `\nThe last ${stalled} turn(s) changed nothing on the page, so try something different or report "blocked".` : ''}\n\nGoal (trusted): ${JSON.stringify(goal)}\n\nCurrent observation:\n${untrusted({url: observation.url, title: observation.title, headings: observation.headings, listing: {count: observation.listing.count, sample: observation.listing.items.slice(0, 8)}, text: observation.text.slice(0, 2200), bookingLinksVisible: bookingLinks, controls, elsewhere: catalog, history}, 12000)}`;
   return ai.ask(prompt, STEP_SCHEMA);
 }
 
@@ -179,7 +191,7 @@ export async function reviewEvidence(ai, {config, report, outDir}) {
   const evidence = {
     actions: report.actions.slice(-40).map(a => ({id: a.id, device: a.device, kind: a.type, target: a.target, outcome: a.outcome, title: a.after?.title})),
     alreadyDetected: report.findings.slice(0, 30).map(f => ({title: f.title, severity: f.severity, trend: f.trend})),
-    goals: report.goals.map(g => ({title: g.title, status: g.status, problem: g.problem})),
+    goals: report.goals.map(g => ({title: g.title, outcome: g.outcome, reason: g.reason, problem: g.problem})),
     showtimes: report.showtimes.summary,
   };
   const prompt = `Review this audit of ${config.url} as a senior UX reviewer. The site's purpose: ${config.purpose || 'not stated'}. The ${images.length} attached screenshots are, in order: ${chosen.slice(0, images.length).join(', ')}. Weigh the first device most.\n\nLook for what automated checks cannot see: unclear hierarchy, confusing labels or jargon, too much before the main content, weak calls to action, cramped layouts, missing feedback, and inconsistencies between screens. Do not repeat items in "alreadyDetected". Give at most eight specific hypotheses with concrete fixes. Set evidenceStep to the exact screenshot path or action id that shows the issue. Only report what the evidence shows; return no suggestions if it is insufficient. Also give up to five short "lessons": what the next audit should test differently and why.\n\n${untrusted(evidence, 14000)}`;

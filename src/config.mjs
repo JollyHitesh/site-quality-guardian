@@ -45,7 +45,8 @@ const DEFAULTS = {
 const SECTION_DEFAULTS = {
   readOnly: {allowPostPaths: ['/cdn-cgi/challenge-platform/'], allowPostBodies: [], blockHosts: []},
   explore: {maxStates: 40, maxDepth: 3, maxPerGroup: 2, maxCombos: 3},
-  ai: {models: ['sonnet', 'haiku'], maxCalls: 12, maxGoals: 2, maxStepsPerGoal: 4, timeoutMs: 150000, reviewScreenshots: 8},
+  ai: {models: ['sonnet', 'haiku'], maxCalls: 12, maxGoals: 2, maxStepsPerGoal: 6, timeoutMs: 150000, reviewScreenshots: 8},
+  booking: {redirectPrefix: '', requireSponsoredRel: false},
   showtimes: {enabled: false, sampleSize: 6, maxRenderChecks: 20, expandPattern: 'show \\d+ more|more showtimes|mehr anzeigen|alle anzeigen'},
 };
 
@@ -56,7 +57,12 @@ function assertRegex(value, label) {
   try { new RegExp(value); } catch { throw new Error(`Config "${label}" is not a valid regular expression`); }
 }
 
+// The agent is anonymous by design, so a site file may not supply anything that identifies a person.
+const FORBIDDEN_KEYS = ['storageState', 'httpCredentials', 'cookies', 'extraHTTPHeaders', 'headers', 'credentials', 'password', 'token', 'login'];
+
 export function normalizeConfig(raw, {slug} = {}) {
+  const forbidden = FORBIDDEN_KEYS.filter(key => key in raw);
+  if (forbidden.length) throw new Error(`Config may not contain credentials or session data: ${forbidden.join(', ')}`);
   const config = {...DEFAULTS, ...raw};
   for (const [name, defaults] of Object.entries(SECTION_DEFAULTS)) config[name] = {...defaults, ...(raw[name] || {})};
   if (typeof config.url !== 'string' || !config.url) throw new Error('Config needs a "url"');
@@ -85,6 +91,8 @@ export function normalizeConfig(raw, {slug} = {}) {
     assertRegex(rule.itemsMustMatch, 'filterSemantics.itemsMustMatch');
     if (rule.applicableIf) assertRegex(rule.applicableIf, 'filterSemantics.applicableIf');
   }
+  // Redirects that count as sponsored clicks are never requested by any part of the agent.
+  if (config.booking.redirectPrefix) config.excludePaths = [...new Set([...config.excludePaths, config.booking.redirectPrefix.replace(/\/$/, '')])];
   config.maxActions = Math.max(1, Math.min(Number(config.maxActions) || DEFAULTS.maxActions, 120));
   config.maxRunMinutes = Math.max(1, Math.min(Number(config.maxRunMinutes) || DEFAULTS.maxRunMinutes, 45));
   // A polite floor for real sites. Local fixtures may go faster.

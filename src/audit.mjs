@@ -11,7 +11,9 @@ import {collectSignals, analyzeSignals, analyzeSticky, measureSticky, scrollThro
 import {measurePage, analyzePerformance} from './perf.mjs';
 import {upsertFinding, sortFindings, saveReport} from './report.mjs';
 import {createAi, AiStopped, proposeGoals, planNextStep, reviewEvidence, controlsForPrompt, cleanAiText, cleanLessons} from './claude.mjs';
-import {nextScreeningPlausibility, extractScreenings, readJsonLd, readPageText, compareWithRendered, chooseSample, matchOnSourcePage, summarizeVerification, sha256} from './showtimes.mjs';
+import {nextScreeningPlausibility, extractScreenings, readJsonLd, readPageText, compareWithRendered, validateBooking, chooseSample, matchOnSourcePage, summarizeVerification, sha256} from './showtimes.mjs';
+import {evaluateCheck, isUsableCheck, visibleBookingLinks, quoteIsOnPage, progressOf, initialTurns, extendTurns, classifyGoal, summarizeGoals} from './goals.mjs';
+import {redactText} from './redact.mjs';
 import {createPolicy, createSafetyLog, installGuard, fetchRobots, robotsAllows} from './guard.mjs';
 import {controlKey, stateKeyOf, createGraph, addState, nextCandidate, markTried, graphSummary} from './explorer.mjs';
 import {listingFingerprint, checkCommutative, checkEmptyResult, checkFilterSemantics, detectAnomalies, updateBaseline, sameListing} from './invariants.mjs';
@@ -35,8 +37,8 @@ export function choosePages(urls, cfg, visited, limit) {
 }
 
 export class Audit {
-  constructor({config, mode, out, memoryFile, now = () => new Date()}) {
-    Object.assign(this, {config, mode, out, memoryFile, now});
+  constructor({config, mode, out, memoryFile, trace = false, now = () => new Date()}) {
+    Object.assign(this, {config, mode, out, memoryFile, trace, now});
     this.browsers = {};
     this.safety = createSafetyLog();
     this.graph = createGraph();
@@ -60,13 +62,13 @@ export class Audit {
       actions: [], findings: [], screenshots: [], visitedPaths: [], performance: [], suggestions: [], goals: [], errors: [], networkSignals: [],
       coverage: {missingHints: {}, linksChecked: 0, a11yPagesScanned: 0, templates: [], states: [], stateCount: 0},
       showtimes: {extracted: 0, renderIssues: 0, results: [], summary: summarizeVerification([])},
-      booking: {status: 'NOT_VERIFIED', linksObserved: 0, invalid: 0, note: 'Booking links are inspected but not followed, so destinations are not confirmed.'},
+      booking: {status: 'NOT_VERIFIED', linksObserved: 0, invalid: 0, note: 'Sponsored redirects are never requested. Destinations come from data the site publishes.'},
       safety: {}, ai: {}, model: {},
     };
   }
 
   log(message) { console.log(`[${Math.round(process.uptime())}s] ${this.config.slug}: ${message}`); }
-  limitation(message) { this.report.errors.push(cleanText(message, 400)); }
+  limitation(message) { this.report.errors.push(cleanText(redactText(message), 400)); }
 
   addFinding(ctx, args) {
     return upsertFinding(this.report.findings, {device: ctx.name, page: ctx.page ? templateOf(pathOf(ctx.page.url())) : undefined, stepId: ctx.step, ...args});
@@ -83,7 +85,7 @@ export class Audit {
   }
 
   async getBrowser(engine) {
-    this.browsers[engine] ||= await ENGINES[engine].launch({headless: true});
+    this.browsers[engine] ||= await ENGINES[engine].launch({headless: true, env: {PATH: process.env.PATH || '', HOME: process.env.HOME || '', TMPDIR: process.env.TMPDIR || '', DISPLAY: process.env.DISPLAY || ''}});
     return this.browsers[engine];
   }
 
@@ -133,6 +135,7 @@ export class Audit {
   /** Saves the evidence image, plus a smaller copy that fits Claude's image limits. */
   async shot(ctx, name, {highlight} = {}) {
     if (ctx.shots <= 0 || this.shotCounter >= this.config.screenshotLimit) return null;
+    if (!isAllowedUrl(ctx.page.url(), this.config) || !(await pageIsSafeToCapture(ctx.page))) return null;
     const base = `${String(this.shotCounter + 1).padStart(2, '0')}-${safeFilename(ctx.name)}-${safeFilename(name)}`;
     const file = `screenshots/${base}.png`;
     try {
@@ -189,6 +192,7 @@ export class Audit {
     if (this.report.showtimes.renderChecks >= this.config.showtimes.maxRenderChecks) return;
     this.report.showtimes.renderChecks = (this.report.showtimes.renderChecks || 0) + 1;
 
+    await this.checkBooking(ctx, found.filter(s => pathOf(s.pageUrl || '') === pagePath));
     const expandedAll = await this.expandShowtimes(ctx);
     const text = await readPageText(ctx.page);
     const now = this.now();
@@ -540,6 +544,23 @@ export class Audit {
 
   aiReserve() { return this.config.ai.maxGoals * this.config.ai.maxStepsPerGoal * 2; }
 
+  /** Static check of ticket destinations: reads published data and sends no request to a redirect. */
+  async checkBooking(ctx, screenings) {
+    const prefix = this.config.booking.redirectPrefix;
+    const links = prefix ? await ctx.page.$$eval(`a[href^="${prefix}"]`, anchors => anchors.map(a => ({rel: a.rel}))) : [];
+    const result = validateBooking(screenings, links, this.config, this.now());
+    const booking = this.report.booking;
+    booking.status = 'STATIC_ONLY';
+    booking.eventsChecked = (booking.eventsChecked || 0) + result.eventsChecked;
+    booking.withDestination = (booking.withDestination || 0) + result.withDestination;
+    booking.redirectLinks = (booking.redirectLinks || 0) + result.redirectLinks;
+    booking.destinationHosts = booking.destinationHosts || {};
+    for (const [host, n] of Object.entries(result.destinationHosts)) booking.destinationHosts[host] = (booking.destinationHosts[host] || 0) + n;
+    if (result.missing.length) this.addFinding(ctx, {kind: 'booking-destination-missing', title: 'Upcoming screening publishes no ticket destination', severity: 'P2', status: 'LIKELY', evidence: {url: ctx.page.url(), screenings: result.missing.slice(0, 5)}});
+    if (result.invalid.length) this.addFinding(ctx, {kind: 'booking-destination-invalid', title: 'Screening publishes an invalid ticket destination', severity: 'P2', status: 'LIKELY', evidence: {url: ctx.page.url(), screenings: result.invalid.slice(0, 5)}});
+    if (result.redirectLinksMissingRel) this.addFinding(ctx, {kind: 'sponsored-link-rel-missing', title: 'Sponsored booking link is not marked as sponsored', severity: 'P3', evidence: {url: ctx.page.url(), count: result.redirectLinksMissingRel}});
+  }
+
   reservedBudget(ctx) {
     const combos = ctx.isPrimary ? this.config.explore.maxCombos * 4 : 0;
     return combos + (this.mode === 'intelligent' && ctx.isPrimary ? this.aiReserve() : 0);
@@ -626,43 +647,126 @@ export class Audit {
     return {runs: this.memory.runs, openFindings: findings, lessons: this.memory.lessons.slice(-12).map(l => l.text)};
   }
 
-  /** Claude invents visitor goals and steers towards them. All execution stays under the guard. */
+  /** Reaches a control hidden behind a drawer by replaying what revealed it. */
+  async revealControl(ctx, key) {
+    let control = locateControl(await observe(ctx.page, ctx.cfg), key, controlKey);
+    if (control) return control;
+    const opener = Object.values(this.graph.states).find(s => s.controls.some(c => controlKey(c) === key));
+    for (const step of opener?.path || []) {
+      const stepControl = locateControl(await observe(ctx.page, ctx.cfg), step, controlKey);
+      if (stepControl) await act(ctx.page, stepControl, ctx.cfg);
+    }
+    control = locateControl(await observe(ctx.page, ctx.cfg), key, controlKey);
+    return control;
+  }
+
+  /** Controls Claude cannot see right now but the explorer already found. */
+  controlCatalog(observation) {
+    const here = new Set(observation.controls.map(controlKey));
+    const seen = new Map();
+    for (const state of Object.values(this.graph.states)) {
+      for (const c of state.controls) {
+        const key = controlKey(c);
+        if (c.tag !== 'a' && c.classification.kind === 'activate' && !here.has(key) && !seen.has(key)) seen.set(key, c);
+      }
+    }
+    return [...seen.entries()].slice(0, 30).map(([key, c], i) => ({ref: `k${i}`, key, name: cleanText(c.name, 60)}));
+  }
+
+  /** Claude proposes journeys and steers them. The software decides how each one ended. */
   async pursueGoals(ctx) {
-    const goals = await proposeGoals(this.ai, {config: this.config, siteModel: graphSummary(this.graph), memoryNotes: this.memoryNotes(), count: this.config.ai.maxGoals});
+    await this.freshStart(ctx);
+    const landing = await observe(ctx.page, ctx.cfg);
+    const landingSummary = {url: landing.url, text: landing.text.slice(0, 1500), listing: landing.listing.count, bookingLinksVisible: visibleBookingLinks(landing, ctx.cfg).length, filtersKnown: this.controlCatalog(landing).map(c => c.name).slice(0, 25)};
+    const count = this.config.ai.maxGoals + 1; // one spare, in case a condition turns out to be unusable
+    const proposals = await proposeGoals(this.ai, {config: this.config, siteModel: graphSummary(this.graph), memoryNotes: this.memoryNotes(), landing: landingSummary, count});
+    const goals = proposals.filter(g => isUsableCheck(g.successCheck)).slice(0, this.config.ai.maxGoals);
+    if (proposals.length && !goals.length) this.limitation('Claude proposed no journey with a usable success condition.');
     for (const goal of goals) {
       if (this.aborted || ctx.budget <= 0) return;
-      const record = {...goal, device: ctx.name, status: 'incomplete', steps: [], problem: null};
-      this.report.goals.push(record);
-      await this.freshStart(ctx);
-      // One extra turn so Claude can judge the outcome of its last actions.
-      for (let turn = 0; turn <= this.config.ai.maxStepsPerGoal && ctx.budget > 0 && !this.aborted; turn++) {
-        if (this.ai.state.calls >= this.ai.state.max - 1) { this.limitation('AI goals stopped early to keep a call for the screenshot review.'); return; }
-        const observation = await observe(ctx.page, ctx.cfg);
-        const plan = await planNextStep(this.ai, {goal, device: ctx.name, observation, controls: controlsForPrompt(observation.controls), history: record.steps.slice(-8)});
-        if (plan.status !== 'continue') {
-          record.status = plan.status;
-          record.problem = plan.problem ? cleanAiText(plan.problem, 240) : null;
-          break;
-        }
-        if (!plan.actions?.length || turn === this.config.ai.maxStepsPerGoal) break;
-        for (const planned of plan.actions.slice(0, 3)) {
-          // Refs are numbered per snapshot, so resolve through the plan's own snapshot.
-          const intended = observation.controls.find(c => c.ref === planned.ref);
-          const control = intended && locateControl(await observe(ctx.page, ctx.cfg), controlKey(intended), controlKey);
-          if (!control || !control.classification.allowed) {
-            record.steps.push({ref: cleanText(planned.ref, 12), outcome: 'rejected: not an allowed control'});
-            continue;
-          }
-          const value = control.classification.kind === 'search' ? safeSearchQuery(planned.value) : planned.value;
-          const result = await this.runStep(ctx, control, {value, source: 'ai-goal'});
-          record.steps.push({step: result?.id, name: cleanText(control.name, 60), why: cleanAiText(planned.why, 120), outcome: result?.ok ? 'done' : cleanText(result?.reason, 80)});
-          if (!result?.ok || result.navigated) break; // the remaining refs no longer describe this page
-        }
+      await this.runJourney(ctx, goal);
+    }
+  }
+
+  async runJourney(ctx, goal) {
+    const cap = this.config.ai.maxStepsPerGoal;
+    const record = {...goal, device: ctx.name, outcome: 'INCOMPLETE', reason: null, problem: null, turns: 0, steps: []};
+    this.report.goals.push(record);
+    await this.freshStart(ctx);
+    const start = await observe(ctx.page, ctx.cfg);
+    const verdict = {vacuous: evaluateCheck(goal.successCheck, start, ctx.cfg), stepsExecuted: 0, checkMet: false, claimed: null, quoteFound: false, stopReason: null};
+    if (!verdict.vacuous) await this.journeyTurns(ctx, goal, record, verdict, start, cap);
+    Object.assign(record, classifyGoal(verdict));
+    record.screenshot = await this.shot(ctx, `goal-${this.report.goals.length}-${record.outcome.toLowerCase()}`);
+    if (record.outcome === 'FAILURE') {
+      this.addFinding(ctx, {kind: 'goal-failed', title: `A visitor journey failed: ${cleanText(goal.title, 70)}`, severity: 'P2', status: 'LIKELY', mergeKey: goal.title, evidence: {goal: goal.title, problem: record.problem, steps: record.steps, screenshot: record.screenshot}});
+    }
+  }
+
+  async journeyTurns(ctx, goal, record, verdict, start, cap) {
+    let allowed = initialTurns(goal.estimatedTurns, cap);
+    let stalls = 0;
+    let lastProgress = progressOf(start);
+    for (let turn = 0; turn < allowed; turn++) {
+      if (this.aborted) return;
+      if (ctx.budget <= 0) { verdict.stopReason = 'action-budget'; return; }
+      if (this.ai.state.calls >= this.ai.state.max - 1) { verdict.stopReason = 'ai-call-budget'; return; } // keeps one call for the screenshot review
+      const observation = await observe(ctx.page, ctx.cfg);
+      const catalog = this.controlCatalog(observation);
+      const booking = visibleBookingLinks(observation, ctx.cfg);
+      const plan = await planNextStep(this.ai, {
+        goal: {title: goal.title, successCheck: goal.successCheck}, device: ctx.name, observation, controls: controlsForPrompt(observation.controls),
+        catalog: catalog.map(({ref, name}) => ({ref, name})), history: record.steps.slice(-8), turnsLeft: allowed - turn, stalled: stalls,
+        bookingLinks: booking.slice(0, 5).map(c => cleanText(c.name, 50)),
+      });
+      record.turns = turn + 1;
+      if (plan.status !== 'continue') {
+        verdict.claimed = plan.status;
+        verdict.quoteFound = quoteIsOnPage(plan.evidenceQuote, observation);
+        verdict.checkMet = evaluateCheck(goal.successCheck, observation, ctx.cfg);
+        record.problem = plan.problem ? cleanAiText(plan.problem, 240) : null;
+        return;
       }
-      record.screenshot = await this.shot(ctx, `goal-${this.report.goals.length}-${record.status}`);
-      if (record.status === 'blocked') {
-        this.addFinding(ctx, {kind: 'goal-blocked', title: `A visitor goal could not be completed: ${cleanText(goal.title, 70)}`, severity: 'P2', status: 'LIKELY', mergeKey: goal.title, evidence: {goal: goal.title, problem: record.problem, steps: record.steps, screenshot: record.screenshot}});
+      if (!plan.actions?.length) { verdict.stopReason = 'stalled'; return; }
+      await this.runPlannedActions(ctx, plan, observation, catalog, record, verdict);
+      await settle(ctx.page, 2500);
+      const after = await observe(ctx.page, ctx.cfg);
+      if (evaluateCheck(goal.successCheck, after, ctx.cfg) && verdict.stepsExecuted > 0) { verdict.checkMet = true; return; }
+      const current = progressOf(after);
+      const progressed = current !== lastProgress;
+      lastProgress = current;
+      stalls = progressed ? 0 : stalls + 1;
+      if (stalls >= 2) { verdict.stopReason = 'stalled'; return; }
+      allowed = extendTurns(allowed, turn, progressed, cap);
+    }
+  }
+
+  async runPlannedActions(ctx, plan, observation, catalog, record, verdict) {
+    let lastKey = null;
+    for (const planned of plan.actions.slice(0, 3)) {
+      // Refs are numbered per snapshot, so resolve through the plan's own snapshot.
+      const fromCatalog = catalog.find(c => c.ref === planned.ref);
+      const intended = observation.controls.find(c => c.ref === planned.ref);
+      const key = fromCatalog?.key || (intended && controlKey(intended));
+      if (!key || (intended && !intended.classification.allowed)) {
+        record.steps.push({ref: cleanText(planned.ref, 12), outcome: 'refused: not an allowed control'});
+        continue;
       }
+      if (key === lastKey) {
+        record.steps.push({name: cleanText(key.split('|').pop(), 60), outcome: 'skipped: repeated the same control'});
+        continue;
+      }
+      lastKey = key;
+      const control = await this.revealControl(ctx, key);
+      if (!control) {
+        record.steps.push({name: cleanText(key.split('|').pop(), 60), outcome: 'control could not be reached'});
+        continue;
+      }
+      const value = control.classification.kind === 'search' ? safeSearchQuery(planned.value) : planned.value;
+      const result = await this.runStep(ctx, control, {value, source: 'ai-goal'});
+      if (result?.ok && !result.unjudged) verdict.stepsExecuted++;
+      record.steps.push({step: result?.id, name: cleanText(control.name, 60), why: cleanAiText(planned.why, 120), outcome: result?.ok ? 'executed' : cleanText(result?.reason, 80)});
+      if (!result?.ok || result.navigated) return; // the remaining refs no longer describe this page
     }
   }
 
@@ -674,7 +778,8 @@ export class Audit {
     const page = await context.newPage();
     const ctx = {name, profile, cfg: forDevice(this.config, name), page, isPrimary, step: 'landing', budget: deviceShare(this.config.maxActions, count, isPrimary) + (this.mode === 'intelligent' && isPrimary ? this.aiReserve() : 0), shots: deviceShare(this.config.screenshotLimit, count, isPrimary)};
     this.attachListeners(ctx);
-    await context.tracing.start({screenshots: true, snapshots: isPrimary, sources: false});
+    // Traces record every header and cookie, so they exist only on request and are never published.
+    if (this.trace) await context.tracing.start({screenshots: true, snapshots: isPrimary, sources: false});
     try {
       let response;
       try {
@@ -707,7 +812,7 @@ export class Audit {
       }
       return {context: this.contextOptions(profile), detailUrl: picks.find(p => ctx.cfg.detailPathPrefixes.some(x => p.path.startsWith(x)))?.url};
     } finally {
-      await context.tracing.stop({path: path.join(this.out, `trace-${name}.zip`)}).catch(() => {});
+      if (this.trace) await context.tracing.stop({path: path.join(this.out, `trace-${name}.zip`)}).catch(() => {});
       await context.close().catch(() => {});
     }
   }
@@ -835,6 +940,7 @@ export class Audit {
       statement: 'All requests passed through a read-only guard. Write requests and navigation off the audited site were aborted before leaving the browser.',
     };
     this.report.ai = this.ai.summary();
+    this.report.goalsSummary = summarizeGoals(this.report.goals);
     for (const [device, list] of Object.entries(this.report.coverage.missingHints)) {
       if (list.length) this.limitation(`${device}: configured controls not found during exploration: ${list.join(', ')}`);
     }
@@ -897,6 +1003,15 @@ export function changedParams(beforeUrl, afterUrl) {
   const after = new URL(afterUrl).searchParams;
   const keys = new Set([...before.keys(), ...after.keys()]);
   return [...keys].filter(k => before.get(k) !== after.get(k));
+}
+
+/** A screenshot may be published or sent to Claude, so nothing a person typed may appear in it. */
+function pageIsSafeToCapture(page) {
+  return page.evaluate(() => {
+    const visibleField = el => el.getClientRects().length > 0;
+    if ([...document.querySelectorAll('input[type=password]')].some(visibleField)) return false;
+    return ![...document.querySelectorAll('input,textarea')].some(el => el.value && ['email', 'tel', 'password'].includes(el.type));
+  }).catch(() => false);
 }
 
 function stateLabel(observation) {

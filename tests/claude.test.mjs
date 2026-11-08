@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildArgs, childEnvironment, createAi, untrusted, parseCliOutput, cleanAiText, cleanLessons, controlsForPrompt, AiStopped} from '../src/claude.mjs';
 import {normalizeConfig} from '../src/config.mjs';
+import {spawnSync} from 'node:child_process';
 
 const config = normalizeConfig({url: 'https://x.test', allowedHosts: ['x.test'], ai: {maxCalls: 3}});
 const schema = {type: 'object'};
@@ -22,6 +23,12 @@ test('the child gets the subscription token but never API keys or other secrets'
   assert.equal(env.ANTHROPIC_API_KEY, undefined);
   assert.equal(env.GITHUB_TOKEN, undefined);
   assert.equal(env.AWS_SECRET_ACCESS_KEY, undefined);
+});
+
+test('the token is removed from the environment that browsers inherit', () => {
+  const code = "import('./src/claude.mjs').then(m => console.log(process.env.CLAUDE_CODE_OAUTH_TOKEN ? 'present' : 'gone', m.childEnvironment({}).CLAUDE_CODE_OAUTH_TOKEN === 'secret-token-value'))";
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', code], {encoding: 'utf8', env: {...process.env, CLAUDE_CODE_OAUTH_TOKEN: 'secret-token-value'}});
+  assert.equal(result.stdout.trim(), 'gone true', result.stderr);
 });
 
 test('an API key is used only when explicitly enabled', () => {

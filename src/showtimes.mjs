@@ -68,6 +68,7 @@ export function extractScreenings(jsonLdBlocks, timezone) {
         venue: String(location?.name || '').trim(),
         venueUrl: typeof location?.url === 'string' ? location.url : null,
         pageUrl: typeof node.url === 'string' ? node.url : null,
+        offerUrl: (Array.isArray(node.offers) ? node.offers[0] : node.offers)?.url ?? null,
       });
     });
   }
@@ -176,6 +177,25 @@ export function matchOnSourcePage(screening, sourceText, now = null) {
   if (windows.some(hasTime)) return {status: dates.some(d => text.includes(d)) ? 'LIKELY_MATCH' : 'TIME_ONLY', detail: 'title and time appear together; date is elsewhere or not shown'};
   if (windows.some(hasDate)) return {status: 'MISMATCH', detail: 'film shown for this date, but not at this time'};
   return {status: 'TITLE_ONLY', detail: 'film listed, but this date and time were not found near it'};
+}
+
+/**
+ * Validates where booking links lead using only what the page publishes. The redirect
+ * itself is never requested, so no sponsored click is ever recorded.
+ */
+export function validateBooking(screenings, links, config, now) {
+  const future = screenings.filter(s => new Date(s.startDate).getTime() > now.getTime());
+  const result = {status: 'STATIC_ONLY', eventsChecked: future.length, withDestination: 0, missing: [], invalid: [], destinationHosts: {}, redirectLinks: links.length, redirectLinksMissingRel: 0};
+  for (const s of future) {
+    if (!s.offerUrl) { result.missing.push({film: s.title, venue: s.venue, start: `${s.date} ${s.time}`}); continue; }
+    let url;
+    try { url = new URL(s.offerUrl); } catch { result.invalid.push({film: s.title, venue: s.venue, reason: 'unparseable'}); continue; }
+    if (url.protocol !== 'https:') { result.invalid.push({film: s.title, venue: s.venue, reason: `uses ${url.protocol.replace(':', '')}`}); continue; }
+    result.withDestination++;
+    result.destinationHosts[url.hostname] = (result.destinationHosts[url.hostname] || 0) + 1;
+  }
+  if (config.booking.requireSponsoredRel) result.redirectLinksMissingRel = links.filter(l => !/\bsponsored\b/.test(l.rel || '')).length;
+  return result;
 }
 
 export function summarizeVerification(results) {
