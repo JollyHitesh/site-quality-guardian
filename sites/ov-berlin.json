@@ -3,15 +3,27 @@
   "url": "https://www.ov-berlin.de/",
   "timezone": "Europe/Berlin",
   "allowedHosts": ["www.ov-berlin.de", "ov-berlin.de"],
-  "maxActions": 30,
-  "detailPathPrefixes": ["/movies/"],
+  "devices": ["mobile", "mobile-small", "mobile-webkit", "desktop"],
+  "maxActions": 50,
+  "maxPages": 8,
   "maxAiRounds": 2,
-  "maxRunMinutes": 15,
+  "maxRunMinutes": 20,
   "rateLimitMs": 800,
-  "searchQueries": ["English tonight", "OmU Mitte"],
+  "screenshotLimit": 30,
+  "linkCheckLimit": 30,
+  "detailPathPrefixes": ["/movies/", "/cinemas/"],
+  "excludePaths": ["/go", "/feed.xml", "/cookie-settings", "/newsletter", "/contact", "/watchlist", "/my-cinemas"],
+  "searchQueries": ["English Sunday", "OmU Mitte"],
   "filters": ["Tonight", "Tomorrow", "Weekend", "English audio", "German subtitles", "English subtitles"],
-  "views": ["List", "Cards", "Map", "Week"],
-  "audiences": ["visitor seeking an original-language screening tonight", "tourist seeking English audio", "user switching dates and filters", "mobile user navigating to the correct cinema booking link"],
-  "devices": ["desktop", "mobile"],
-  "screenshotLimit": 14
+  "views": ["Switch to list view", "Switch to cards view", "Switch to map view", "Switch to week view"],
+  "deviceOverrides": {
+    "mobile": {
+      "filters": ["Tonight", "Tomorrow", "Weekend", "English", "German subtitles (OmU)", "English subtitles (OmeU)", "Mitte", "Evening"],
+      "views": ["Cards", "Map", "Week"],
+      "revealButtons": ["Filters", "View: list"],
+      "revealCloseButtons": ["Done", "Close filters"]
+    }
+  },
+  "checks": {"nextScreening": true},
+  "audiences": ["visitor on a phone seeking an original-language screening tonight", "tourist seeking English audio", "user switching dates and filters on a small screen", "mobile user finding the right cinema booking link"]
 }

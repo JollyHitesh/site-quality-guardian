@@ -20,6 +20,7 @@ export function saveMemory(memory, results, file = 'memory/state.json') {
   memory.runs = (memory.runs || 0) + 1;
   memory.lastRun = results.finishedAt;
   for (const action of results.actions || []) {
+    if (action.outcome !== 'PASS') continue; // a skipped or rejected action is not coverage
     const key = `${action.device}:${action.type}:${action.target}`.slice(0,150);
     memory.actionCounts[key] = (memory.actionCounts[key] || 0) + 1;
   }

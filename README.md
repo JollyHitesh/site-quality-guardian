@@ -48,25 +48,51 @@ npm run audit -- --mode smoke --config sites/ov-berlin.json
 npm run audit -- --mode intelligent --config sites/ov-berlin.json
 ```
 
-If Claude Code is unavailable, an intelligent run still produces browser evidence and records the limitation in the report.
+You need the Claude Code CLI installed/authenticated for intelligent mode; if unavailable, the run still produces browser evidence and reports the limitation. `--out` and `--memory` choose where results and learning state are written.
 
 ## Running on GitHub Actions
 
-1. Fork this repository.
-2. Generate a Claude Code OAuth token with `claude setup-token`.
-3. Add it as a repository secret: **Settings > Secrets and variables > Actions > New repository secret**, named `CLAUDE_CODE_OAUTH_TOKEN`. Store it only as a secret, never in code, `.env` files or workflow definitions.
-4. Enable Pages: **Settings > Pages > Build and deployment > Source > GitHub Actions**.
-5. Run **Actions > Audit external website > Run workflow**. Start with `smoke`, then try `intelligent` once smoke passes.
+- `src/runner.mjs`: audit pipeline per device, mobile first
+- `src/config.mjs`: site config validation, device profiles, per-device overrides
+- `src/browser.mjs`: discovery of visible controls and execution of allowlisted actions
+- `src/checks.mjs`: mobile and usability measurements, and the rules that judge them
+- `src/perf.mjs`: throttled phone performance (LCP, CLS, TBT, FCP, TTFB)
+- `src/security.mjs`: strict origin policy and prohibited interactions
+- `src/claude.mjs`: structured planning and screenshot review through Claude Code with all tools disabled
+- `src/memory.mjs`: persistent coverage and defect recurrence memory
+- `src/report.mjs`: finding merge, Markdown, JSON and HTML output
+- `sites/ov-berlin.json`: editable, source-independent site config
+- `.github/workflows/audit.yml`: daily smoke testing plus weekly AI exploration
+
+## Adding another website
+
+Copy `sites/ov-berlin.json` and change the URL and hosts. The order of `devices` sets priority: the first gets 60% of the budget, AI exploration and the performance pass. Available devices are `mobile`, `mobile-small` (320px), `mobile-android`, `mobile-webkit` (Safari engine) and `desktop`.
+
+| Setting | Purpose |
+| --- | --- |
+| `filters`, `views`, `safeButtons` | Exact button names the audit may press |
+| `deviceOverrides` | Different button names per device or per family (`mobile`) |
+| `revealButtons`, `revealCloseButtons` | Buttons that open and close drawers holding those controls |
+| `detailPathPrefixes` | Paths the audit may open by tapping a link |
+| `excludePaths` | Paths never visited, such as outbound booking redirects |
+| `primaryActionPattern` | Regex marking the main call-to-action links |
+| `checks.nextScreening` | Enables the cinema-specific "Next" showtime check |
+
+Controls that are not found are listed in the report, so a redesign shows up as a coverage gap and not as a silent pass.
 
 The workflow runs a daily smoke audit and a weekly intelligent audit. Full evidence (screenshots, traces) is attached to each job's **Artifacts**; the latest report is served on the repository's Pages site.
 
-## Adding a site
+**Every run, on every device:** HTTP status of pages and first-party requests, blank and soft-error pages, uncaught JavaScript and console errors, content blocked by CSP, sideways overflow, broken images, invalid call-to-action links, WCAG automated axe-core findings on one page of each type, and whether each filter, view and search actually changed the page.
 
-Copy `sites/ov-berlin.json` and adjust it for your site. A profile defines:
+**On phones:** touch target size against WCAG 2.5.8 and the 44px guideline, form fields that make iPhones zoom, unreadably small text, oversized images, how much of the screen sticky bars cover, and landscape layout. Layout findings include a screenshot with the affected elements outlined.
 
-- the allowed HTTPS hosts,
-- the buttons, views and detail-path prefixes the agent may interact with,
-- the journeys to run.
+**On the first device:** internal link checks, and performance measured with an empty cache on Slow 4G with a 4x CPU slowdown. These are lab numbers and real visitors will differ.
+
+**AI mode:** chooses additional safe actions based on the site inventory and persistent memory, then reviews the screenshots for problems automated checks cannot see, such as confusing hierarchy or labels. Suggestions are explicitly *not confirmed defects*.
+
+Severities: **P0** site down or blank (turns the GitHub run red), **P1** blocks a core task, **P2** hurts usability, **P3** polish. A finding marked "Likely" needs a quick manual look.
+
+**Not independently verified:** individual cinema showtime truth against authoritative cinema websites; booking destination parity for each individual session; exhaustive usability coverage. The report labels showtime source accuracy `NOT_VERIFIED`. Those need a cinema-source adapter, not a comparison between two parts of the same website.
 
 Anything not explicitly allowed is blocked by the executor.
 
@@ -74,7 +100,7 @@ Anything not explicitly allowed is blocked by the executor.
 
 ## What is verified, and what is not
 
-**Verified deterministically:** reachability, HTTP responses, selected filters, views, search and navigation, viewport overflow, failed image loads, uncaught JavaScript exceptions, axe-core WCAG findings, and site-specific checks defined in the profile (for OV Berlin, "Next" showtime headings that are already in the past, in Berlin local time). An interaction that fails is reported as failed or skipped, not automatically as a site defect.
+The target profile controls allowed HTTPS hosts and an explicit allowlist of buttons, views and detail-path prefixes; the executor rejects actions outside those lists, including tickets, signups, watchlist edits and forms, in English and German. The only consent choice the audit ever makes is to refuse optional tracking, and links opening new tabs are closed unvisited. Claude sees untrusted text only as evidence; it is restricted to JSON plans and cannot run shell commands, edit source or read secrets. The workflow runs only on manually dispatched or scheduled events, not untrusted external pull requests. Each audit publishes only browser-observable public content and metadata.
 
 **AI suggestions:** hypotheses are anchored to recorded action IDs and are explicitly labelled as unconfirmed.
 
