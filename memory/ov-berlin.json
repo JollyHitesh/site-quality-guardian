@@ -1,0 +1,32 @@
+{
+ "schemaVersion": 2,
+ "site": "ov-berlin",
+ "runs": 0,
+ "lastRun": null,
+ "history": [
+  {
+   "at": "2026-11-08T13:12:37.568Z",
+   "mode": "smoke",
+   "status": "BLOCKED_BY_SITE_PROTECTION",
+   "actions": 1,
+   "states": 0,
+   "open": {},
+   "newFindings": 0,
+   "regressions": 0,
+   "transient": 0,
+   "showtimes": "NOT_VERIFIED",
+   "aiCalls": 0,
+   "lcpMs": 0,
+   "goals": {}
+  }
+ ],
+ "coverage": {
+  "controls": {},
+  "paths": {}
+ },
+ "states": {},
+ "baselines": {},
+ "findings": {},
+ "lessons": [],
+ "sources": {}
+}
