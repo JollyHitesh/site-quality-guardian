@@ -72,20 +72,7 @@ For scheduled audits, add a file to `sites/`. Only `name`, `url` and `allowedHos
 | `showtimes` | Enable event-data and source checks |
 | `ai` | Models, call budget, and goals per run |
 
-| Module | Responsibility |
-| --- | --- |
-| `src/runner.mjs` | Orchestrates runs and risk-based journeys |
-| `src/browser.mjs` | Discovers visible controls and executes allowlisted actions |
-| `src/security.mjs` | Origin policy and prohibited interactions |
-| `src/claude.mjs` | Structured planning and UX analysis via Claude Code (`--safe-mode --tools ""`) |
-| `src/memory.mjs` | Coverage and defect recurrence memory |
-| `src/report.mjs` | Report, screenshot and trace output |
-| `sites/*.json` | Site profiles |
-| `.github/workflows/audit.yml` | Scheduled and manual audit runs |
-
-## Quick start (local)
-
-Requirements: Node.js and npm. Intelligent mode additionally requires the [Claude Code CLI](https://code.claude.com/docs/en/quickstart), installed and authenticated.
+## Commands
 
 ```sh
 npm ci --ignore-scripts
