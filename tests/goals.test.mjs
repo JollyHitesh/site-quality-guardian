@@ -8,6 +8,17 @@ import {normalizeConfig} from '../src/config.mjs';
 const config = normalizeConfig({url: 'https://x.test/', allowedHosts: ['x.test'], booking: {redirectPrefix: '/go/', requireSponsoredRel: true}});
 const obs = (extra = {}) => ({url: 'https://x.test/movies/a', text: 'Showing Tonight at the Lichtblick', title: '', active: [], expanded: [], dialogOpen: false, headings: [], controls: [], listing: {count: 5, items: ['a']}, ...extra});
 
+test('a filter with only a visual state is judged by the list it narrows', () => {
+  const check = {kind: 'listing-narrowed-by', value: 'English', alsoRequire: 'none'};
+  const observation = {url: 'https://x.test/', listing: {count: 6, items: []}, active: [], controls: [], text: ''};
+  const config = {primaryActionPattern: 'tickets'};
+  assert.equal(evaluateCheck(check, observation, config, {startCount: 44, executed: ['English audio']}), true);
+  assert.equal(evaluateCheck(check, observation, config, {startCount: 6, executed: ['English audio']}), false, 'the list must get shorter');
+  assert.equal(evaluateCheck(check, observation, config, {startCount: 44, executed: ['Tonight']}), false, 'the named filter must be the one used');
+  assert.equal(evaluateCheck(check, {...observation, listing: {count: 0, items: []}}, config, {startCount: 44, executed: ['English audio']}), false, 'an empty list is not success');
+  assert.equal(evaluateCheck(check, observation, config), false, 'nothing is true before the journey');
+});
+
 test('success conditions are checked against the page itself', () => {
   assert.equal(evaluateCheck({kind: 'page-text-contains', value: 'at the lichtblick'}, obs(), config), true);
   assert.equal(evaluateCheck({kind: 'page-text-contains', value: 'never there'}, obs(), config), false);
