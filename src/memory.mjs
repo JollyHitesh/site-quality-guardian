@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {cleanText} from './security.mjs';
+import {redactDeep} from './redact.mjs';
 
 export const SCHEMA_VERSION = 2;
 const LIMITS = {history: 60, controls: 1500, paths: 800, findings: 500, baselines: 250, lessons: 30, bits: 20};
@@ -44,7 +45,7 @@ export function sanitizeMemory(raw, site = '') {
   memory.history = (Array.isArray(raw.history) ? raw.history : []).filter(isObject).slice(-LIMITS.history).map(r => ({
     at: cleanText(r.at, 30), mode: cleanText(r.mode, 15), status: cleanText(r.status, 30), actions: count(r.actions), states: count(r.states),
     open: isObject(r.open) ? numberMap(r.open) : {}, newFindings: count(r.newFindings), regressions: count(r.regressions),
-    transient: count(r.transient), showtimes: cleanText(r.showtimes, 30), aiCalls: count(r.aiCalls), lcpMs: count(r.lcpMs),
+    transient: count(r.transient), showtimes: cleanText(r.showtimes, 30), aiCalls: count(r.aiCalls), lcpMs: count(r.lcpMs), goals: isObject(r.goals) ? numberMap(r.goals) : {},
   }));
   if (raw.schemaVersion === 1 || raw.actionCounts) {
     memory.coverage.controls = Object.fromEntries(Object.entries(numberMap(raw.actionCounts)).map(([k, v]) => [k.replace(/^([^:]+):(click|view|search|open_detail):/, '$1|button|'), v]));
@@ -85,7 +86,7 @@ export function loadMemory(file, site = '') {
 export function saveMemoryFile(memory, file) {
   fs.mkdirSync(path.dirname(path.resolve(file)), {recursive: true});
   const temporary = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${JSON.stringify(memory, null, 1)}\n`);
+  fs.writeFileSync(temporary, `${JSON.stringify(redactDeep(memory), null, 1)}\n`);
   fs.renameSync(temporary, file);
 }
 
@@ -114,7 +115,7 @@ export function annotateFindings(findings, memory) {
   }
 }
 
-const NEVER_RESOLVED_BY_ABSENCE = new Set(['goal-blocked', 'search-no-results', 'filter-empty-unexplained']);
+const NEVER_RESOLVED_BY_ABSENCE = new Set(['goal-failed', 'goal-blocked', 'search-no-results', 'filter-empty-unexplained']);
 const NEEDS_CHECK_RUN = new Set(['state-lost-on-reload', 'filter-order-dependent', 'filter-semantics']);
 const NEEDS_SAME_TARGET = {'control-no-effect': 'controlKeys', 'control-obscured': 'controlKeys', 'source-link-broken': 'sources', 'showtime-source-mismatch': 'sources'};
 
@@ -193,7 +194,7 @@ export function learnFromRun(memory, report, {stateMetrics = {}, lessons = []} =
   memory.lastRun = at;
   memory.history.push({
     at, mode: report.mode, status: report.status, actions: report.actions.length, states: report.coverage.stateCount || 0, open: opened, newFindings, regressions, transient,
-    showtimes: report.showtimes?.summary?.verdict || 'NOT_VERIFIED', aiCalls: report.ai?.calls || 0, lcpMs: report.performance?.[0]?.metrics?.lcpMs || 0,
+    showtimes: report.showtimes?.summary?.verdict || 'NOT_VERIFIED', aiCalls: report.ai?.calls || 0, lcpMs: report.performance?.[0]?.metrics?.lcpMs || 0, goals: report.goalsSummary || {},
   });
   prune(memory);
 }

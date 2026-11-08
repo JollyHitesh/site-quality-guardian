@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {safeFilename, cleanText} from './security.mjs';
+import {redactDeep} from './redact.mjs';
 import {THRESHOLDS, rate} from './perf.mjs';
 
 const SEVERITIES = ['P0', 'P1', 'P2', 'P3'];
@@ -50,7 +51,10 @@ const FIX_HINTS = {
   'filter-order-dependent': 'Apply filters as a set, so the order chosen by the visitor cannot change the outcome.',
   'filter-empty-unexplained': 'Show a message and a way to relax the filters when nothing matches.',
   'state-lost-on-reload': 'Keep filters in the URL so reloading and sharing restore the same results.',
-  'goal-blocked': 'Follow the recorded steps by hand. This came from an AI visitor, so confirm it before acting.',
+  'goal-failed': 'Follow the recorded steps by hand. An AI visitor reported this with evidence from the page, so confirm it before acting.',
+  'booking-destination-missing': 'Publish a ticket destination in each screening\'s offers data.',
+  'booking-destination-invalid': 'Use a complete https address for this screening\'s ticket destination.',
+  'sponsored-link-rel-missing': 'Mark every sponsored redirect with rel="sponsored".',
   'ai-directed-text': 'Check whether this text is meant to be on the page. It may be an injection attempt against AI tools.',
   'anomaly-itemCount': 'Compare with the previous run. A sharp change usually means a broken feed or import.',
   'anomaly-textLength': 'Compare with the previous run to see which content appeared or disappeared.',
@@ -119,6 +123,10 @@ function writeMarkdown(report, out) {
     lines.push('## AI suggestions (not confirmed defects)', '');
     for (const s of report.suggestions) lines.push(`- **${cleanText(s.title)}** (${cleanText(s.device, 30)}, evidence: ${cleanText(s.evidenceStep, 80)}). ${cleanText(s.suggestedFix, 300)}`);
   }
+  if (report.goals?.length) {
+    lines.push('', '## AI visitor journeys', '', `Success: ${report.goalsSummary.SUCCESS}, Failure: ${report.goalsSummary.FAILURE}, Incomplete: ${report.goalsSummary.INCOMPLETE}`, '');
+    for (const g of report.goals) lines.push(`- **${g.outcome}** (${g.reason}): ${cleanText(g.title, 140)}`);
+  }
   if (report.errors?.length) lines.push('', '## Execution limitations', ...report.errors.map(x => `- ${cleanText(x, 500)}`));
   fs.writeFileSync(path.join(out, 'report.md'), `${lines.join('\n')}\n`);
 }
@@ -132,7 +140,7 @@ nav.jump{position:sticky;top:0;background:var(--bg);display:flex;gap:6px;overflo
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:18px 0}.metric,.issue{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
 .metric b{display:block;font-size:1.7rem;line-height:1.2;font-variant-numeric:tabular-nums}.issue{margin:10px 0}.issue h3{font-size:1rem;margin:6px 0 4px}
 .sev{font-weight:700;font-size:.75rem;letter-spacing:.03em}.P0{color:var(--p0)}.P1{color:var(--p1)}.P2{color:var(--p2)}.P3{color:var(--p3)}
-.chip{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:0 8px;font-size:.75rem;color:var(--muted);margin:2px 4px 2px 0}.chip.REGRESSED{color:var(--p0);font-weight:700}.chip.NEW{color:var(--p1)}
+.chip{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:0 8px;font-size:.75rem;color:var(--muted);margin:2px 4px 2px 0}.chip.REGRESSED,.chip.outcome-FAILURE{color:var(--p0);font-weight:700}.chip.outcome-SUCCESS{color:var(--good);font-weight:700}.chip.outcome-INCOMPLETE{color:var(--p2);font-weight:700}.chip.NEW{color:var(--p1)}
 .fix{margin:8px 0}details{margin-top:8px}summary{cursor:pointer;min-height:44px;line-height:44px;color:var(--muted);font-size:.875rem}
 pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code);padding:10px;border-radius:7px;font-size:.8rem}
 .scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.875rem;font-variant-numeric:tabular-nums}td,th{border-bottom:1px solid var(--line);text-align:left;padding:8px;white-space:nowrap}td.wrap{white-space:normal;min-width:180px}
@@ -177,15 +185,29 @@ function renderShowtimes(showtimes = {}) {
   return `<p><strong>${esc(verdict)}.</strong> ${esc(VERDICT_TEXT[verdict] || '')}</p><p class="sub">${esc(showtimes.extracted || 0)} screenings read from the site's structured data. ${esc(showtimes.renderIssues || 0)} differences from the rendered pages.</p>${rows ? `<div class="scroll"><table><thead><tr><th>Film</th><th>Cinema</th><th>Listed</th><th>Result</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}`;
 }
 
-function renderGoals(goals = []) {
-  if (!goals.length) return '<p>No AI visitor goals in this run.</p>';
-  return goals.map(g => `<article class="issue"><span class="chip">${esc(g.status)}</span><span class="chip">${esc(g.device)}</span><h3>${esc(g.title)}</h3><p class="sub">${esc(g.why)}</p>${g.problem ? `<p>${esc(g.problem)}</p>` : ''}<details><summary>${esc(g.steps.length)} steps</summary><pre>${esc(JSON.stringify(g.steps, null, 2))}</pre></details></article>`).join('');
+const REASON_TEXT = {
+  'success-condition-verified': 'The success condition, set before the journey began, was true on the final page.',
+  'visitor-blocked-with-evidence': 'The AI visitor got stuck, and the page supports what it reported.',
+  'criterion-already-met-before-journey': 'The success condition was already true before any step, so this proves nothing.',
+  'no-steps-executed': 'No step was performed.',
+  'blocked-claim-without-evidence': 'The AI visitor reported being stuck, but the page did not support it.',
+  'success-claim-not-verified': 'The AI visitor claimed success, but the success condition was not true.',
+  'stalled': 'Consecutive turns changed nothing on the page.',
+  'turn-budget-exhausted': 'It ran out of turns before the success condition became true.',
+  'ai-call-budget': 'The run reached its Claude call limit.',
+  'action-budget': 'The run reached its browser action limit.',
+};
+
+function renderGoals(goals = [], summary) {
+  if (!goals.length) return '<p>No AI visitor journeys in this run.</p>';
+  const cards = goals.map(g => `<article class="issue"><span class="chip outcome-${esc(g.outcome)}">${esc(g.outcome)}</span><span class="chip">${esc(g.device)}</span><h3>${esc(g.title)}</h3><p>${esc(REASON_TEXT[g.reason] || g.reason)}</p><p class="sub">${esc(g.why)}</p><p class="sub">Success condition: ${esc(g.successCheck?.kind)} ${esc(g.successCheck?.value)}${g.successCheck?.alsoRequire && g.successCheck.alsoRequire !== 'none' ? `, plus ${esc(g.successCheck.alsoRequire)}` : ''}</p>${g.problem ? `<p>${esc(g.problem)}</p>` : ''}<details><summary>${esc(g.steps.length)} steps</summary><pre>${esc(JSON.stringify(g.steps, null, 2))}</pre></details></article>`).join('');
+  return `<p>${esc(summary?.SUCCESS ?? 0)} succeeded, ${esc(summary?.FAILURE ?? 0)} failed, ${esc(summary?.INCOMPLETE ?? 0)} incomplete. A journey only succeeds when its success condition is verified on the page.</p>${cards}`;
 }
 
 function renderHistory(history = []) {
   if (!history.length) return '<p>This is the first recorded run.</p>';
-  const rows = [...history].reverse().slice(0, 20).map(h => `<tr><td>${esc(h.at)}</td><td>${esc(h.mode)}</td><td>${esc(h.status)}</td><td>${esc(h.open?.P0 ?? 0)}</td><td>${esc(h.open?.P1 ?? 0)}</td><td>${esc(h.open?.P2 ?? 0)}</td><td>${esc(h.newFindings)}</td><td>${esc(h.regressions)}</td><td>${esc(h.transient)}</td><td>${esc(h.showtimes)}</td></tr>`).join('');
-  return `<div class="scroll"><table><thead><tr><th>Run</th><th>Mode</th><th>Status</th><th>P0</th><th>P1</th><th>P2</th><th>New</th><th>Regressed</th><th>Transient</th><th>Showtimes</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const rows = [...history].reverse().slice(0, 20).map(h => `<tr><td>${esc(h.at)}</td><td>${esc(h.mode)}</td><td>${esc(h.status)}</td><td>${esc(h.open?.P0 ?? 0)}</td><td>${esc(h.open?.P1 ?? 0)}</td><td>${esc(h.open?.P2 ?? 0)}</td><td>${esc(h.newFindings)}</td><td>${esc(h.regressions)}</td><td>${esc(h.transient)}</td><td>${esc(h.showtimes)}</td><td>${esc(h.goals?.total ? `${h.goals.SUCCESS ?? 0}/${h.goals.total}` : '-')}</td></tr>`).join('');
+  return `<div class="scroll"><table><thead><tr><th>Run</th><th>Mode</th><th>Status</th><th>P0</th><th>P1</th><th>P2</th><th>New</th><th>Regressed</th><th>Transient</th><th>Showtimes</th><th>Journeys succeeded</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function writeHtml(report, out) {
@@ -196,7 +218,7 @@ function writeHtml(report, out) {
   const findings = active.map(renderFinding).join('') || '<p>No defects were recorded in this run. That does not guarantee there are none.</p>';
   const suggestions = (report.suggestions || []).map(s => `<article class="issue"><span class="sev ${esc(s.severity)}">${esc(s.severity)}</span> <span class="chip">${esc(s.device)}</span><h3>${esc(s.title)}</h3><p>${esc(s.userImpact)}</p><p class="fix"><strong>Try:</strong> ${esc(s.suggestedFix)}</p><p class="sub">Evidence: ${esc(s.evidenceStep)} · Check first: ${esc(s.validationNeeded)}</p></article>`).join('') || `<p>${report.mode === 'intelligent' ? 'No AI suggestions were produced in this run.' : 'AI review runs in intelligent mode.'}</p>`;
   const pictures = report.screenshots.map(file => `<a href="${esc(file)}"><img loading="lazy" src="${esc(file)}" alt="Audit screenshot ${esc(file)}"><small>${esc(path.basename(file))}</small></a>`).join('') || 'No screenshots were captured.';
-  const actions = report.actions.map(a => `<tr><td>${esc(a.id)}</td><td>${esc(a.at)}</td><td>${esc(a.device)}</td><td>${esc(a.source || '')}</td><td>${esc(a.type)}</td><td class="wrap">${esc(a.target)}</td><td class="wrap">${esc(a.outcome)}</td></tr>`).join('');
+  const actions = report.actions.map(a => `<tr><td>${esc(a.id)}</td><td>${esc(a.at)}</td><td>${esc(a.device)}</td><td>${esc(a.source || '')}</td><td>${esc(a.type)}</td><td class="wrap">${esc(a.target)}</td><td class="wrap">${esc(a.outcome === 'PASS' ? 'Executed' : a.outcome)}</td></tr>`).join('');
   const missing = Object.entries(report.coverage.missingHints || {}).filter(([, list]) => list.length).map(([device, list]) => `<li><strong>${esc(device)}:</strong> ${esc(list.join(', '))}</li>`).join('');
   const blocked = Object.entries(report.safety?.blockedRequests || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'none';
   const model = report.model || {};
@@ -205,14 +227,14 @@ function writeHtml(report, out) {
 <div class="grid">${SEVERITIES.map(s => metric(count(s), `${s}: ${SEVERITY_MEANING[s]}`, s)).join('')}${metric(transient.length, 'Transient, not counted')}${metric(model.states ?? 0, 'States discovered')}${metric(report.actions.length, 'Browser actions')}</div>
 <section id="findings"><h2>Findings, most urgent first</h2>${findings}${transient.length ? `<details><summary>${transient.length} transient, not counted</summary>${transient.map(renderFinding).join('')}</details>` : ''}${report.resolvedThisRun?.length ? `<p>Resolved in this run: ${esc(report.resolvedThisRun.join('; '))}</p>` : ''}</section>
 <section id="showtimes"><h2>Showtime accuracy</h2>${renderShowtimes(report.showtimes)}</section>
-<section id="goals"><h2>AI visitor goals</h2>${renderGoals(report.goals)}</section>
+<section id="goals"><h2>AI visitor journeys</h2>${renderGoals(report.goals, report.goalsSummary)}</section>
 <section><h2>AI usability review</h2><p class="sub">Hypotheses from the screenshots, not confirmed defects.</p>${report.aiSummary ? `<p>${esc(report.aiSummary)}</p>` : ''}${suggestions}</section>
 <section id="perf"><h2>Phone performance</h2>${renderPerformance(report.performance)}</section>
 <section id="coverage"><h2>Coverage</h2><p>${esc(model.controlsTried ?? 0)} of ${esc(model.controlsDiscovered ?? 0)} discovered control types exercised across ${esc(model.states ?? 0)} states and ${esc(model.transitions ?? 0)} transitions. ${esc(report.coverage.linksChecked || 0)} internal links checked. ${esc(report.coverage.a11yPagesScanned || 0)} pages scanned for accessibility. Pages visited: ${esc(report.visitedPaths.join(', ') || 'none')}</p>${missing ? `<p>These configured names were not found, so please check the site config:</p><ul>${missing}</ul>` : ''}</section>
 <section id="history"><h2>Run history</h2>${renderHistory(report.history)}</section>
 <section id="shots"><h2>Screenshots</h2><div class="pics">${pictures}</div></section>
-<section><h2>Interaction log</h2><details><summary>${report.actions.length} actions</summary><div class="scroll"><table><thead><tr><th>ID</th><th>Time</th><th>Device</th><th>Source</th><th>Action</th><th>Target</th><th>Result</th></tr></thead><tbody>${actions}</tbody></table></div></details></section>
-<section id="safety"><h2>Safety and limitations</h2><p>${esc(report.safety?.statement || '')} Blocked requests: ${esc(blocked)}.</p><p>Booking links: ${esc(report.booking?.note || '')}</p><ul>${(report.errors || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>All stages completed.</li>'}</ul><p class="sub">Generated by an independent browser agent that never books, buys or submits forms. <a href="manifest.json">Evidence hashes</a>. This dashboard may be public.</p></section>`;
+<section><h2>Interaction log</h2><p class="sub">"Executed" means the browser performed the step. It does not mean a visitor journey succeeded.</p><details><summary>${report.actions.length} actions</summary><div class="scroll"><table><thead><tr><th>ID</th><th>Time</th><th>Device</th><th>Source</th><th>Action</th><th>Target</th><th>Result</th></tr></thead><tbody>${actions}</tbody></table></div></details></section>
+<section id="safety"><h2>Safety and limitations</h2><p>${esc(report.safety?.statement || '')} Blocked requests: ${esc(blocked)}.</p><p>Booking links: ${esc(report.booking?.note || '')} ${esc(report.booking?.withDestination ?? 0)} of ${esc(report.booking?.eventsChecked ?? 0)} upcoming screenings publish a valid destination.</p><ul>${(report.errors || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>All stages completed.</li>'}</ul><p class="sub">Generated by an independent browser agent that never books, buys or submits forms. <a href="manifest.json">Evidence hashes</a>. This dashboard may be public.</p></section>`;
   fs.mkdirSync(path.join(out, 'site'), {recursive: true});
   fs.writeFileSync(path.join(out, 'site', 'index.html'), pageShell(`${report.config.name} quality report`, body));
   for (const s of report.screenshots) {
@@ -234,7 +256,8 @@ function writeManifest(report, out) {
   fs.copyFileSync(path.join(out, 'manifest.json'), path.join(out, 'site', 'manifest.json'));
 }
 
-export function saveReport(report, out = 'out') {
+export function saveReport(rawReport, out = 'out') {
+  const report = redactDeep(rawReport); // the one exit for everything published
   fs.mkdirSync(out, {recursive: true});
   fs.writeFileSync(path.join(out, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   writeMarkdown(report, out);
