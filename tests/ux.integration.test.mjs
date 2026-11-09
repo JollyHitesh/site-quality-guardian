@@ -18,11 +18,20 @@ const skip = !browsersReady && 'Playwright browsers not installed';
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const fake = path.join(root, 'tests', 'fixtures', 'fake-claude-ux.cjs');
 
+// The agent strips Claude's environment down to an allowlist, so the log path is set by a wrapper.
+function loggingClaude(dir) {
+  const log = path.join(dir, 'claude.jsonl');
+  const wrapper = path.join(dir, 'claude-wrapper');
+  fs.writeFileSync(wrapper, `#!/bin/sh\nFAKE_CLAUDE_LOG='${log}' exec '${process.execPath}' '${fake}' "$@"\n`, {mode: 0o755});
+  return {wrapper, log};
+}
+
 function audit(dir, config) {
   const file = path.join(dir, 'fixture.json');
   fs.writeFileSync(file, JSON.stringify(config));
-  const log = path.join(dir, 'claude.jsonl');
-  const child = spawn(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--config', file, '--out', path.join(dir, 'out'), '--memory', path.join(dir, 'state.json')], {cwd: root, stdio: 'ignore', env: {...process.env, GUARDIAN_CLAUDE_BIN: fake, FAKE_CLAUDE_LOG: log}});
+  const {wrapper, log} = loggingClaude(dir);
+  fs.rmSync(log, {force: true});
+  const child = spawn(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--config', file, '--out', path.join(dir, 'out'), '--memory', path.join(dir, 'state.json')], {cwd: root, stdio: 'ignore', env: {...process.env, GUARDIAN_CLAUDE_BIN: wrapper}});
   return new Promise(resolve => child.on('close', code => resolve({code, report: JSON.parse(fs.readFileSync(path.join(dir, 'out', 'fixture', 'report.json'), 'utf8')), calls: fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n').map(l => JSON.parse(l)) : []})));
 }
 
@@ -73,7 +82,7 @@ test('planted UX anti-patterns are found, each with evidence, and history works'
   assert.equal(western.metrics.repeatedActions, 1);
   assert.equal(western.metrics.deadEnds, 1);
   assert.equal(ux.journeys.find(j => j.id === 'filter-comedy').metrics.resultsOffScreen, 1);
-  assert.ok(calls.filter(c => c.schema.includes('status') || c.images === 0).every(c => !c.elsewhere), 'journeys can only use what a visitor can see');
+  assert.ok(calls.length > 0 && calls.every(c => !c.elsewhere), 'journeys can only use what a visitor can see');
 
   // Measured facts and expert claims are kept apart, and the evidence rules work end to end.
   assert.ok(ux.issues.some(i => i.class === 'detected-defect' && i.provenance === 'measured'));
@@ -92,6 +101,8 @@ test('planted UX anti-patterns are found, each with evidence, and history works'
 
   // Bounded and read-only.
   assert.ok(report.ai.calls <= report.ai.budget);
+  assert.equal(calls.length, report.ai.calls, 'every Claude call was recorded');
+  assert.ok(calls.some(c => c.images > 0), 'the review really received screenshots');
   assert.ok(calls.every(c => c.fenced), 'page data is always fenced');
   assert.ok(calls.filter(c => c.images > 0).every(c => c.images <= 8));
   assert.equal(hits.some(h => !h.startsWith('GET ')), false, 'only reads reach the server');
@@ -144,8 +155,8 @@ test('a small Claude budget is respected and the shortfall is stated', {skip, ti
   const config = uxConfig('good', port);
   const file = path.join(dir, 'fixture.json');
   fs.writeFileSync(file, JSON.stringify({...config, ux: {...config.ux, devices: ['desktop'], journeyDevices: ['desktop']}}));
-  const log = path.join(dir, 'claude.jsonl');
-  const child = spawn(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--claude-budget', '2', '--config', file, '--out', path.join(dir, 'out'), '--memory', path.join(dir, 'state.json')], {cwd: root, stdio: 'ignore', env: {...process.env, GUARDIAN_CLAUDE_BIN: fake, FAKE_CLAUDE_LOG: log}});
+  const {wrapper, log} = loggingClaude(dir);
+  const child = spawn(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--claude-budget', '2', '--config', file, '--out', path.join(dir, 'out'), '--memory', path.join(dir, 'state.json')], {cwd: root, stdio: 'ignore', env: {...process.env, GUARDIAN_CLAUDE_BIN: wrapper}});
   await new Promise(resolve => child.on('close', resolve));
   stopServer(server);
   const report = JSON.parse(fs.readFileSync(path.join(dir, 'out', 'fixture', 'report.json'), 'utf8'));
