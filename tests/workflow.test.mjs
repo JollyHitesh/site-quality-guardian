@@ -145,6 +145,20 @@ test('the memory sanitizer cleans files and refuses unexpected names', () => {
   assert.equal(clean.runs, 0);
 });
 
+test('CI really runs the UX browser tests and the security checks', () => {
+  assert.match(ci, /playwright install --with-deps chromium webkit/);
+  assert.match(ci, /npm audit --audit-level=high/);
+  assert.match(ci, /github\/codeql-action\/analyze@/);
+  assert.match(ci, /^permissions:\n {2}contents: read$/m);
+});
+
+test('the Claude budget reaches the audit through the environment and is reported', () => {
+  assert.match(audit, /GUARDIAN_CLAUDE_BUDGET: \$\{\{ inputs\.claude_budget \|\| vars\.GUARDIAN_CLAUDE_BUDGET \|\| '12' \}\}/);
+  assert.match(job('audit'), /Report the Claude call budget/);
+  assert.match(job('audit'), /budgetLimited/);
+  assert.equal(/\$\{\{[^}]*claude_budget[^}]*\}\}.*node /.test(audit), false);
+});
+
 test('UX audits are manual, get the token, and keep smoke free of Claude', () => {
   assert.match(audit, /- ux\n/);
   assert.match(audit, /\(env\.MODE == 'intelligent' \|\| env\.MODE == 'ux'\) && secrets\.CLAUDE_CODE_OAUTH_TOKEN/);

@@ -10,6 +10,7 @@ const origin = new URL(base);
 if (origin.protocol !== 'https:' && origin.hostname !== '127.0.0.1') { console.error('The dashboard address must use https'); process.exit(64); }
 const SAFE_FILE = /^(index\.html|shots\/[A-Za-z0-9_.-]+\.jpg)$/;
 const MAX_FILES = 80;
+const MAX_BYTES = 5_000_000;
 const get = url => fetch(url, {redirect: 'error', signal: AbortSignal.timeout(20000)});
 
 for (const name of fs.readdirSync(sitesDir).filter(f => f.endsWith('.json'))) {
@@ -22,7 +23,9 @@ for (const name of fs.readdirSync(sitesDir).filter(f => f.endsWith('.json'))) {
     const fetched = await Promise.all(files.map(async file => {
       const response = await get(`${root}/${file}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return [file, Buffer.from(await response.arrayBuffer())];
+      const body = Buffer.from(await response.arrayBuffer());
+      if (body.length > MAX_BYTES) throw new Error('file too large');
+      return [file, body];
     }));
     for (const [file, body] of fetched) {
       const destination = path.join(target, slug, file);

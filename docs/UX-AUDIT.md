@@ -8,9 +8,9 @@ It answers four questions for a website owner: what visitors are trying to do, w
 
 | Class | Who decides | What it means |
 | --- | --- | --- |
-| Detected by measurement | A published rule, in a real browser | Reproducible fact |
-| Expert judgement | Claude, from cited screenshots and actions, then cross-checked | Well-supported hypothesis |
-| Needs user research | Claude, or a claim that was weak on cross-check | An idea to test with people |
+| Measured defects | A published rule, in a real browser | Reproducible fact |
+| Expert design hypotheses | Claude, from cited screenshots and actions, then cross-checked | Well-supported hypothesis |
+| Ideas needing user research | Claude, or a claim that was weak on cross-check | An idea to test with people |
 
 Automation timings describe the run. They are never presented as human task times. The agent does not report visitor feelings, satisfaction or cognitive states. A claim that asserts them is discarded.
 
@@ -56,11 +56,11 @@ Low confidence lowers a rating by one level. Software sets expert confidence fro
 
 ## Scorecard
 
-Five categories: discoverability, task efficiency, clarity, visual design and accessibility. Each is the weighted average of its assessed criteria, with pass = 100, concern = 50 and fail = 0.
+Five categories: discoverability, task efficiency, clarity, visual design and accessibility. **A score comes only from measured criteria.** Expert assessments appear beside it as pass, concern and fail counts, and cannot move it.
 
-No number appears unless at least half the category's weight was assessed, at least two criteria were assessed, and one of them was measured. Accessibility is scored only from measurements. Trends compare only runs with the same rubric version and the same journeys.
+A pass earns the criterion's full weight, a concern earns half and a fail earns none. The score is the points earned divided by the points assessed. No number appears unless at least half of the category's measured weight was assessed and at least two measured criteria were assessed. A criterion with no screenshot or action to cite is left out. The report shows each criterion's points, reason and evidence, and every reference links to the evidence index.
 
-Thresholds and weights are set per site under `ux.thresholds` and `ux.scorecard.weights`. Changing them changes the rubric version.
+Trends compare only runs with the same rubric version and the same journeys. Thresholds and weights are set per site under `ux.thresholds` and `ux.scorecard.weights`. Changing them changes the rubric version.
 
 ## Memory
 
@@ -80,7 +80,14 @@ Decisions are `validated`, `needs-research`, `rejected`, `accepted-risk` and `fi
 
 ## Claude usage
 
-A first run is capped at 24 calls: up to 18 for journeys, 5 for review and 1 for the cross-check. Later runs usually use far fewer, because journeys replay. Set `ux.maxCalls` and `ux.reviewCalls` to spend less. Without Claude, the measured half of the report still completes and says what is missing.
+Every call counts against a hard budget. Set it for one run with `--claude-budget N` or the workflow's `claude_budget` input, or for all hosted runs with the repository variable `GUARDIAN_CLAUDE_BUDGET`. Hosted runs default to 12. Local runs default to `ux.maxCalls`, which is 24.
+
+- Routes that worked are replayed at no cost.
+- Up to half the budget, and at most `ux.reviewCalls`, is kept for expert review. Unused planning calls go to the review.
+- When calls are short, the least-assessed criteria are reviewed first, so successive runs cover everything.
+- One call is kept for the cross-check whenever at least two remain.
+
+If the budget cuts anything short, the report opens with exactly what was skipped, the run is marked as having limitations, and the workflow raises a warning and writes a job summary. Measured results are not affected. With a budget of 0, or without Claude, the measured half of the report still completes.
 
 ## Validation
 
