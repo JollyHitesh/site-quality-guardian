@@ -3,7 +3,7 @@
 import {stateKeyOf} from './explorer.mjs';
 
 export const OUTCOMES = ['SUCCESS', 'FAILURE', 'INCOMPLETE'];
-export const CHECK_KINDS = ['page-path-contains', 'page-text-contains', 'listing-at-least', 'booking-link-visible', 'filter-active'];
+export const CHECK_KINDS = ['page-path-contains', 'page-text-contains', 'listing-at-least', 'booking-link-visible', 'filter-active', 'listing-narrowed-by'];
 export const ALSO_REQUIRE = ['none', 'booking-link', 'non-empty-listing'];
 
 const norm = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -28,8 +28,10 @@ export function visibleBookingLinks(observation, config) {
   });
 }
 
-function mainConditionHolds(check, observation, config) {
+function mainConditionHolds(check, observation, config, context) {
   const url = new URL(observation.url);
+  // For filters whose state is only visual: the named control was used and the list got shorter.
+  if (check.kind === 'listing-narrowed-by') return observation.listing.count > 0 && observation.listing.count < (context.startCount ?? 0) && (context.executed || []).some(name => norm(name).includes(norm(check.value)));
   if (check.kind === 'page-path-contains') return `${url.pathname}${url.search}`.toLowerCase().includes(norm(check.value));
   if (check.kind === 'page-text-contains') return norm(observation.fullText ?? observation.text).includes(norm(check.value));
   if (check.kind === 'listing-at-least') return observation.listing.count >= Number(check.value);
@@ -37,8 +39,8 @@ function mainConditionHolds(check, observation, config) {
   return visibleBookingLinks(observation, config).length > 0;
 }
 
-export function evaluateCheck(check, observation, config) {
-  if (!isUsableCheck(check) || !mainConditionHolds(check, observation, config)) return false;
+export function evaluateCheck(check, observation, config, context = {}) {
+  if (!isUsableCheck(check) || !mainConditionHolds(check, observation, config, context)) return false;
   if (check.alsoRequire === 'booking-link') return visibleBookingLinks(observation, config).length > 0;
   if (check.alsoRequire === 'non-empty-listing') return observation.listing.count > 0;
   return true;

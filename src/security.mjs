@@ -65,6 +65,8 @@ export function safeSearchQuery(value) {
   return q;
 }
 
+export function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c])); }
+
 export function safeFilename(value) { return String(value).replace(/[^a-zA-Z0-9_.-]+/g, '-').slice(0, 70); }
 
 export function cleanText(value, max = 200) { return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max); }

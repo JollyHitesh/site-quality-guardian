@@ -1,6 +1,7 @@
 // Sees the page the way a visitor's browser does, and acts only on controls classified as safe.
 import {classifyControl, isAllowedUrl, cleanText} from './security.mjs';
 
+export const SERVER_ERROR_PAGE = /application error: a (?:server|client)-side exception|internal server error|\b50[0-4] (?:error|bad gateway|service unavailable)/i;
 export const EMPTY_RESULTS = /\b(no (results|movies|films|screenings|showtimes|matches|events)|nothing found|keine (ergebnisse|treffer|filme|vorstellungen))\b/i;
 
 /** Waits for hydration and data fetches, so clicks reach a page that can respond. */
@@ -110,7 +111,7 @@ function collectObservation() {
     active: activeControls.map(nameOf).filter(Boolean).slice(0, 25),
     expanded: expandedControls.map(nameOf).filter(Boolean).slice(0, 12),
     dialogOpen: !!document.querySelector('dialog[open],[role=dialog]:not([hidden]),[aria-modal=true]'),
-    listing: {count: best ? best.list.length : 0, items, statedCount: countMatch ? Number(countMatch[1]) : null},
+    listing: {count: best ? best.list.length : 0, items, statedCount: countMatch ? Number(countMatch[1]) : null, top: best ? Math.round(best.list[0].getBoundingClientRect().top + scrollY) : null},
   };
 }
 
@@ -123,7 +124,7 @@ export async function observe(page, config) {
 }
 
 /** A cheap signature of what the visitor sees, to detect whether a control did anything. */
-function stateSignature(page) {
+export function stateSignature(page) {
   return page.evaluate(() => {
     const states = [...document.querySelectorAll('[aria-pressed],[aria-selected],[aria-checked],[aria-expanded],[aria-current],[data-state]')]
       .map(el => ['aria-pressed', 'aria-selected', 'aria-checked', 'aria-expanded', 'aria-current', 'data-state'].map(a => el.getAttribute(a)).join())
@@ -132,7 +133,7 @@ function stateSignature(page) {
   });
 }
 
-async function waitForChange(page, before, timeout) {
+export async function waitForChange(page, before, timeout) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (await stateSignature(page).catch(() => '') !== before) return true;
@@ -165,7 +166,7 @@ function classifyFailure(message) {
 }
 
 /* Re-reads the element at click time: the page may have swapped it since the snapshot. */
-function liveDescription(el) {
+export function liveDescription(el) {
   const clean = s => (s || '').replace(/\s+/g, ' ').trim();
   const form = el.form || el.closest('form');
   return {
@@ -197,6 +198,7 @@ export async function act(page, control, config, {value, changeTimeout = 3000} =
     if (!liveCheck.allowed) return {ok: false, code: 'rejected', reason: `Blocked at click time: ${liveCheck.reason}`};
 
     const signature = await stateSignature(page);
+    const actionStarted = Date.now();
     let wasActive = false;
     if (classification.kind === 'search') {
       if (!value) return {ok: false, code: 'rejected', reason: 'Search needs a query'};
@@ -212,6 +214,7 @@ export async function act(page, control, config, {value, changeTimeout = 3000} =
       await locator.click({timeout: 8000});
     }
     const changed = wasActive ? null : await waitForChange(page, signature, changeTimeout);
+    const responseMs = changed ? Date.now() - actionStarted : null;
     if (page.url() !== before) await settle(page);
     if (changed !== false) await waitForStable(page);
     await page.waitForTimeout(config.rateLimitMs || 0);
@@ -222,7 +225,7 @@ export async function act(page, control, config, {value, changeTimeout = 3000} =
       await settle(page);
       return {ok: false, code: 'rejected', reason: 'Navigation blocked by the read-only guard'};
     }
-    return {ok: true, changed, navigated: page.url() !== before, ms: Date.now() - startedAt};
+    return {ok: true, changed, navigated: page.url() !== before, ms: Date.now() - startedAt, responseMs};
   } catch (e) {
     const blocker = e.message.match(/.{0,120}intercepts pointer events/)?.[0];
     return {ok: false, code: classifyFailure(e.message), reason: cleanText(blocker || e.message, 200)};

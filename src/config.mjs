@@ -48,6 +48,7 @@ const SECTION_DEFAULTS = {
   ai: {models: ['sonnet', 'haiku'], maxCalls: 12, maxGoals: 2, maxStepsPerGoal: 6, timeoutMs: 150000, reviewScreenshots: 8},
   booking: {redirectPrefix: '', requireSponsoredRel: false},
   showtimes: {enabled: false, sampleSize: 6, maxRenderChecks: 20, expandPattern: 'show \\d+ more|more showtimes|mehr anzeigen|alle anzeigen'},
+  ux: {devices: ['mobile', 'tablet', 'desktop'], journeyDevices: [], journeys: [], maxJourneys: 3, maxCalls: 24, reviewCalls: 6, imagesPerBatch: 6, screenshotLimit: 48, stagesPerJourney: 6, exploreActions: 10, exploreShots: 4, journeyActions: 24, maxPages: 3, keyboardDevice: 'desktop', keyboardPages: 2, keyboardControls: 6, keyboardNarrowControls: 3, keyboardShots: 8, maxTabs: 60, maxRunMinutes: 30, emptySearchQuery: 'zzqxjv qqwxy', keyControls: 'search|filter|suche', thresholds: {}, scorecard: {weights: {}, minCoverage: 0.5}, decisions: {}},
 };
 
 const STRING_LISTS = ['allowedHosts', 'detailPathPrefixes', 'excludePaths', 'denyLabels', 'filters', 'views', 'safeButtons', 'searchQueries', 'audiences', 'priorities', 'consentButtons'];
@@ -59,6 +60,24 @@ function assertRegex(value, label) {
 
 // The agent is anonymous by design, so a site file may not supply anything that identifies a person.
 const FORBIDDEN_KEYS = ['storageState', 'httpCredentials', 'cookies', 'extraHTTPHeaders', 'headers', 'credentials', 'password', 'token', 'login'];
+
+function validateUx(config, raw) {
+  const {ux} = config;
+  const unknown = [...ux.devices, ...ux.journeyDevices, ux.keyboardDevice].filter(d => !DEVICE_PROFILES[d]);
+  if (unknown.length) throw new Error(`Unknown UX device(s): ${unknown.join(', ')}`);
+  if (!ux.devices.length) throw new Error('Config "ux.devices" needs at least one device');
+  assertRegex(ux.keyControls, 'ux.keyControls');
+  ux.keyControlsDeclared = typeof raw.keyControls === 'string';
+  ux.maxCalls = Math.max(0, Math.min(Number(ux.maxCalls) || 0, 30));
+  ux.reviewCalls = Math.max(0, Math.min(Number(ux.reviewCalls) || 0, 8));
+  ux.imagesPerBatch = Math.max(1, Math.min(Number(ux.imagesPerBatch) || 6, 10));
+  ux.maxRunMinutes = Math.max(1, Math.min(Number(ux.maxRunMinutes) || 30, 45));
+  ux.scorecard = {weights: {}, minCoverage: 0.5, ...ux.scorecard};
+  for (const journey of ux.journeys) {
+    if (!journey.id || !journey.title || !journey.successCheck) throw new Error('Each "ux.journeys" entry needs "id", "title" and "successCheck"');
+    if (!/^[a-z0-9-]+$/.test(journey.id)) throw new Error(`UX journey id must use lowercase letters, numbers and hyphens: ${journey.id}`);
+  }
+}
 
 export function normalizeConfig(raw, {slug} = {}) {
   const forbidden = FORBIDDEN_KEYS.filter(key => key in raw);
@@ -91,6 +110,7 @@ export function normalizeConfig(raw, {slug} = {}) {
     assertRegex(rule.itemsMustMatch, 'filterSemantics.itemsMustMatch');
     if (rule.applicableIf) assertRegex(rule.applicableIf, 'filterSemantics.applicableIf');
   }
+  validateUx(config, raw.ux || {});
   // Redirects that count as sponsored clicks are never requested by any part of the agent.
   if (config.booking.redirectPrefix) config.excludePaths = [...new Set([...config.excludePaths, config.booking.redirectPrefix.replace(/\/$/, '')])];
   config.maxActions = Math.max(1, Math.min(Number(config.maxActions) || DEFAULTS.maxActions, 120));

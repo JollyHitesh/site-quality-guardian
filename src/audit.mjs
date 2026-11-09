@@ -6,7 +6,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {isAllowedUrl, isExcludedPath, cleanText, safeFilename, safeSearchQuery, findInjectionText} from './security.mjs';
 import {forDevice, deviceShare, DEVICE_PROFILES} from './config.mjs';
 import {loadMemory, saveMemoryFile, annotateFindings, learnFromRun, recordIncompleteRun, hotTemplates} from './memory.mjs';
-import {observe, act, settle, locateControl} from './browser.mjs';
+import {observe, act, settle, locateControl, SERVER_ERROR_PAGE} from './browser.mjs';
 import {collectSignals, analyzeSignals, analyzeSticky, measureSticky, scrollThrough, templateOf} from './checks.mjs';
 import {measurePage, analyzePerformance} from './perf.mjs';
 import {upsertFinding, sortFindings, saveReport} from './report.mjs';
@@ -16,6 +16,8 @@ import {evaluateCheck, isUsableCheck, visibleBookingLinks, quoteIsOnPage, progre
 import {redactText} from './redact.mjs';
 import {createPolicy, createSafetyLog, installGuard, fetchRobots, robotsAllows} from './guard.mjs';
 import {controlKey, stateKeyOf, createGraph, addState, nextCandidate, markTried, graphSummary} from './explorer.mjs';
+import {UxAuditor} from './ux-audit.mjs';
+import {learnUx} from './ux-memory.mjs';
 import {listingFingerprint, checkCommutative, checkEmptyResult, checkFilterSemantics, detectAnomalies, updateBaseline, sameListing} from './invariants.mjs';
 
 const ENGINES = {chromium, webkit};
@@ -41,8 +43,12 @@ export function choosePages(urls, cfg, visited, limit) {
 }
 
 export class Audit {
-  constructor({config, mode, out, memoryFile, trace = false, now = () => new Date()}) {
+  constructor({config: siteConfig, mode, out, memoryFile, trace = false, now = () => new Date(), claudeBudget = null}) {
+    // A UX audit has its own devices and budgets. Every other mode keeps the site's settings.
+    const config = mode === 'ux' ? {...siteConfig, devices: siteConfig.ux.devices, screenshotLimit: siteConfig.ux.screenshotLimit, maxRunMinutes: Math.max(siteConfig.maxRunMinutes, siteConfig.ux.maxRunMinutes), ai: {...siteConfig.ai, maxCalls: limitCalls(siteConfig.ux.maxCalls, claudeBudget)}} : {...siteConfig, ai: {...siteConfig.ai, maxCalls: limitCalls(siteConfig.ai.maxCalls, claudeBudget)}};
     Object.assign(this, {config, mode, out, memoryFile, trace, now});
+    // Journeys come first, but may not eat the whole budget. Unused planning calls go to the review.
+    this.aiReserveCalls = mode === 'ux' ? Math.min(config.ux.reviewCalls, Math.ceil(config.ai.maxCalls / 2)) : 1;
     this.browsers = {};
     this.safety = createSafetyLog();
     this.graph = createGraph();
@@ -163,7 +169,7 @@ export class Audit {
     try {
       if (highlight?.length) await this.drawHighlights(ctx.page, highlight);
       await ctx.page.screenshot({path: path.join(this.out, file), fullPage: false, animations: 'disabled', timeout: 10000});
-      if (this.mode === 'intelligent') await ctx.page.screenshot({path: path.join(this.out, 'ai', `${base}.jpg`), type: 'jpeg', quality: 60, scale: 'css', animations: 'disabled', timeout: 10000}).catch(() => {});
+      if (this.mode !== 'smoke') await ctx.page.screenshot({path: path.join(this.out, 'ai', `${base}.jpg`), type: 'jpeg', quality: 60, scale: 'css', animations: 'disabled', timeout: 10000}).catch(() => {});
       this.shotCounter++;
       ctx.shots--;
       this.report.screenshots.push(file);
@@ -202,7 +208,7 @@ export class Audit {
 
   /** Compares published event data against the page, and against the clock. */
   async checkShowtimes(ctx) {
-    if (!this.config.showtimes.enabled) return;
+    if (!this.config.showtimes.enabled || this.mode === 'ux') return;
     const blocks = await readJsonLd(ctx.page);
     const found = extractScreenings(blocks, this.config.timezone);
     const known = new Set(this.screenings.map(s => `${s.title}|${s.startDate}|${s.venue}`));
@@ -471,6 +477,7 @@ export class Audit {
     const key = controlKey(control);
     const writesBefore = this.safety.firstPartyWritesBlocked;
     const popupsBefore = ctx.popups || 0;
+    if (ctx.uxTrace) await ctx.uxTrace.beforeAction(control);
     const result = await act(ctx.page, control, ctx.cfg, {value, changeTimeout});
     ctx.budget--;
     result.guardBlockedWrite = this.safety.firstPartyWritesBlocked > writesBefore;
@@ -484,6 +491,7 @@ export class Audit {
     const listingChanged = after ? !sameListing(listingFingerprint(before.listing), listingFingerprint(after.listing)) : false;
     const paramsChanged = after ? changedParams(before.url, after.url) : [];
     const id = this.record(ctx, control.classification.kind, target, result, {controlKey: key, source, listingChanged, sameTemplate, paramsChanged, fromState: state?.key || stateKeyOf(before), value: value ? cleanText(value, 70) : undefined});
+    if (ctx.uxTrace) await ctx.uxTrace.afterAction({id, control, key, result, before, after});
     // With a drawer that we opened still showing, being covered is expected and says nothing.
     if (result.code === 'obscured' && !state?.path?.length) this.addFinding(ctx, {kind: 'control-obscured', title: `Something covers the "${cleanText(target, 40)}" control, so it cannot be tapped`, severity: 'P1', status: 'LIKELY', scope: key, evidence: {reason: result.reason, reproduce: {controlKey: key, path: state?.path || []}}});
     if (!result.ok || !after) return {...result, id, before, after, key};
@@ -501,7 +509,8 @@ export class Audit {
     if (control.classification.kind === 'search' && after.emptyMessage) {
       this.addFinding(ctx, {kind: 'search-no-results', title: `Search for "${cleanText(value, 40)}" returned no results`, severity: 'P2', status: 'LIKELY', evidence: {query: cleanText(value, 70)}});
     }
-    if (sameTemplate) {
+    // A crashed page has no list. That is reported from the HTTP failure, not as an empty filter.
+    if (sameTemplate && !SERVER_ERROR_PAGE.test(after.text)) {
       for (const finding of checkEmptyResult(target, before.listing, after.listing, after.emptyMessage)) this.addFinding(ctx, finding);
     }
     for (const rule of ctx.cfg.filterSemantics) {
@@ -730,13 +739,44 @@ export class Audit {
     this.report.goals.push(record);
     await this.freshStart(ctx);
     const start = await observe(ctx.page, ctx.cfg);
-    const verdict = {vacuous: evaluateCheck(goal.successCheck, start, ctx.cfg), stepsExecuted: 0, checkMet: false, claimed: null, quoteFound: false, stopReason: null};
-    if (!verdict.vacuous) await this.journeyTurns(ctx, goal, record, verdict, start, cap);
+    const verdict = {vacuous: evaluateCheck(goal.successCheck, start, ctx.cfg, {startCount: start.listing.count}), stepsExecuted: 0, checkMet: false, claimed: null, quoteFound: false, stopReason: null};
+    if (ctx.uxTrace) await ctx.uxTrace.onStart(start);
+    if (!verdict.vacuous) {
+      const replayed = goal.replayPath ? await this.replayJourney(ctx, goal, record, verdict, start) : false;
+      if (!replayed) await this.journeyTurns(ctx, goal, record, verdict, await observe(ctx.page, ctx.cfg), cap);
+    }
     Object.assign(record, classifyGoal(verdict));
-    record.screenshot = await this.shot(ctx, `goal-${this.report.goals.length}-${record.outcome.toLowerCase()}`);
+    record.stopReason = verdict.stopReason;
+    delete record.replayPath;
+    record.screenshot = ctx.uxTrace?.lastFile || await this.shot(ctx, `goal-${this.report.goals.length}-${record.outcome.toLowerCase()}`);
     if (record.outcome === 'FAILURE') {
       this.addFinding(ctx, {kind: 'goal-failed', title: `A visitor journey failed: ${cleanText(goal.title, 70)}`, severity: 'P2', status: 'LIKELY', mergeKey: goal.title, evidence: {goal: goal.title, problem: record.problem, steps: record.steps, screenshot: record.screenshot}});
     }
+  }
+
+  /** Repeats a route that worked before, so it costs no Claude calls and stays comparable. */
+  async replayJourney(ctx, goal, record, verdict, start) {
+    for (const key of goal.replayPath) {
+      if (this.aborted || ctx.budget <= 0) break;
+      const control = locateControl(await observe(ctx.page, ctx.cfg), key, controlKey);
+      const result = control ? await this.runStep(ctx, control, {value: control.classification.kind === 'search' ? this.searchValue(ctx) : undefined, source: 'ux-replay'}) : null;
+      if (!result?.ok || result.unjudged) break;
+      verdict.stepsExecuted++;
+      record.steps.push({step: result.id, name: cleanText(control.name, 60), kind: control.classification.kind, why: 'Repeated a route that worked in an earlier run', outcome: 'executed'});
+    }
+    await settle(ctx.page, 2500);
+    if (verdict.stepsExecuted > 0 && evaluateCheck(goal.successCheck, await observe(ctx.page, ctx.cfg), ctx.cfg, checkContext(record, start))) {
+      verdict.checkMet = true;
+      record.planner = 'replayed';
+      return true;
+    }
+    // The route no longer works, which is itself worth knowing. Start again as a new visitor.
+    record.replayFailed = true;
+    record.replayRestarted = ctx.uxTrace ? ctx.uxTrace.steps.length : 0;
+    record.steps = [];
+    verdict.stepsExecuted = 0;
+    await this.freshStart(ctx);
+    return false;
   }
 
   async journeyTurns(ctx, goal, record, verdict, start, cap) {
@@ -746,9 +786,10 @@ export class Audit {
     for (let turn = 0; turn < allowed; turn++) {
       if (this.aborted) return;
       if (ctx.budget <= 0) { verdict.stopReason = 'action-budget'; return; }
-      if (this.ai.state.calls >= this.ai.state.max - 1) { verdict.stopReason = 'ai-call-budget'; return; } // keeps one call for the screenshot review
+      if (this.ai.state.calls >= this.ai.state.max - this.aiReserveCalls) { verdict.stopReason = 'ai-call-budget'; return; } // keeps calls for the review
       const observation = await observe(ctx.page, ctx.cfg);
-      const catalog = this.controlCatalog(observation);
+      // A UX journey may use only what a visitor can see, so hidden controls cost real steps.
+      const catalog = ctx.uxTrace ? [] : this.controlCatalog(observation);
       const booking = visibleBookingLinks(observation, ctx.cfg);
       const plan = await planNextStep(this.ai, {
         goal: {title: goal.title, successCheck: goal.successCheck}, device: ctx.name, observation, controls: controlsForPrompt(observation.controls),
@@ -759,7 +800,7 @@ export class Audit {
       if (plan.status !== 'continue') {
         verdict.claimed = plan.status;
         verdict.quoteFound = quoteIsOnPage(plan.evidenceQuote, observation);
-        verdict.checkMet = evaluateCheck(goal.successCheck, observation, ctx.cfg);
+        verdict.checkMet = evaluateCheck(goal.successCheck, observation, ctx.cfg, checkContext(record, start));
         record.problem = plan.problem ? cleanAiText(plan.problem, 240) : null;
         return;
       }
@@ -767,7 +808,7 @@ export class Audit {
       await this.runPlannedActions(ctx, plan, observation, catalog, record, verdict);
       await settle(ctx.page, 2500);
       const after = await observe(ctx.page, ctx.cfg);
-      if (evaluateCheck(goal.successCheck, after, ctx.cfg) && verdict.stepsExecuted > 0) { verdict.checkMet = true; return; }
+      if (evaluateCheck(goal.successCheck, after, ctx.cfg, checkContext(record, start)) && verdict.stepsExecuted > 0) { verdict.checkMet = true; return; }
       const current = progressOf(after);
       const progressed = current !== lastProgress;
       lastProgress = current;
@@ -801,9 +842,29 @@ export class Audit {
       const value = control.classification.kind === 'search' ? safeSearchQuery(planned.value) : planned.value;
       const result = await this.runStep(ctx, control, {value, source: 'ai-goal'});
       if (result?.ok && !result.unjudged) verdict.stepsExecuted++;
-      record.steps.push({step: result?.id, name: cleanText(control.name, 60), why: cleanAiText(planned.why, 120), outcome: result?.ok ? 'executed' : cleanText(result?.reason, 80)});
+      record.steps.push({step: result?.id, name: cleanText(control.name, 60), kind: control.classification.kind, why: cleanAiText(planned.why, 120), outcome: result?.ok ? 'executed' : cleanText(result?.reason, 80)});
       if (!result?.ok || result.navigated) return; // the remaining refs no longer describe this page
     }
+  }
+
+  /** Opens the landing page, reporting an outage or a block. False means nothing more can run. */
+  async openLanding(ctx) {
+    const {name, page} = ctx;
+    let response;
+    try {
+      response = await this.gotoSettled(ctx, this.config.url).catch(() => this.gotoSettled(ctx, this.config.url));
+    } catch (e) {
+      upsertFinding(this.report.findings, {kind: 'site-unreachable', title: 'Landing page could not be loaded', severity: 'P0', device: name, evidence: {reason: cleanText(e.message, 250), url: this.config.url}});
+      this.record(ctx, 'navigate', this.config.url, {ok: false, reason: e.message});
+      return false;
+    }
+    this.record(ctx, 'navigate', this.config.url, {ok: !!response?.ok(), reason: `HTTP ${response?.status()}`, after: {url: page.url(), title: await page.title()}});
+    if ([403, 429].includes(response?.status())) { this.access.landingDenied = true; return false; }
+    if (!response?.ok()) {
+      this.addFinding(ctx, {kind: 'page-http', title: `Landing page returned HTTP ${response?.status() || 'unknown'}`, severity: 'P0', evidence: {url: this.config.url, status: response?.status()}});
+      return false;
+    }
+    return true;
   }
 
   async auditDevice(name, isPrimary) {
@@ -817,20 +878,7 @@ export class Audit {
     // Traces record every header and cookie, so they exist only on request and are never published.
     if (this.trace) await context.tracing.start({screenshots: true, snapshots: isPrimary, sources: false});
     try {
-      let response;
-      try {
-        response = await this.gotoSettled(ctx, this.config.url).catch(() => this.gotoSettled(ctx, this.config.url));
-      } catch (e) {
-        upsertFinding(this.report.findings, {kind: 'site-unreachable', title: 'Landing page could not be loaded', severity: 'P0', device: name, evidence: {reason: cleanText(e.message, 250), url: this.config.url}});
-        this.record(ctx, 'navigate', this.config.url, {ok: false, reason: e.message});
-        return null;
-      }
-      this.record(ctx, 'navigate', this.config.url, {ok: !!response?.ok(), reason: `HTTP ${response?.status()}`, after: {url: page.url(), title: await page.title()}});
-      if ([403, 429].includes(response?.status())) { this.access.landingDenied = true; return null; }
-      if (!response?.ok()) {
-        this.addFinding(ctx, {kind: 'page-http', title: `Landing page returned HTTP ${response?.status() || 'unknown'}`, severity: 'P0', evidence: {url: this.config.url, status: response?.status()}});
-        return null;
-      }
+      if (!(await this.openLanding(ctx))) return null;
       await this.shot(ctx, 'first-visit');
       await this.stage(ctx, 'consent', () => this.dismissConsent(ctx));
       await this.stage(ctx, 'landing checks', async () => { await scrollThrough(page); await this.inspectPage(ctx, {isLanding: true}); });
@@ -959,6 +1007,15 @@ export class Audit {
     }
   }
 
+  /** Says plainly what a limited Claude budget left undone. */
+  reportIntelligentBudget() {
+    const shortfalls = [];
+    const cut = this.report.goals.filter(g => g.stopReason === 'ai-call-budget');
+    if (cut.length) shortfalls.push(`${cut.length} visitor journey(s) stopped at the Claude call budget: ${cut.map(g => cleanText(g.title, 60)).join('; ')}.`);
+    if (!this.report.aiSummary) shortfalls.push('The screenshot review did not complete.');
+    this.report.budget = {limit: this.ai.state.max, used: this.ai.state.calls, complete: !shortfalls.length, shortfalls, stopped: this.ai.state.stopped};
+  }
+
   finalize() {
     this.report.access = {...this.access, blocked: this.isAccessBlocked(), ratio: this.access.attempted ? Number((this.access.denied / this.access.attempted).toFixed(2)) : 0};
     if (this.report.access.blocked) {
@@ -988,7 +1045,7 @@ export class Audit {
     for (const [device, list] of Object.entries(this.report.coverage.missingHints)) {
       if (list.length) this.limitation(`${device}: configured controls not found during exploration: ${list.join(', ')}`);
     }
-    if (this.config.showtimes.enabled && !this.report.showtimes.results.length) this.limitation('Showtimes were not compared with any cinema source in this run.');
+    if (this.config.showtimes.enabled && this.mode !== 'ux' && !this.report.showtimes.results.length) this.limitation('Showtimes were not compared with any cinema source in this run.');
   }
 
   async run() {
@@ -1008,19 +1065,32 @@ export class Audit {
       if (config.respectRobots) this.robots = await fetchRobots(new URL(config.url).origin, config.userAgentSuffix || 'Mozilla/5.0');
       this.policy = createPolicy(config, {robotsRules: config.respectRobots ? this.robots.rules : []});
       if (config.respectRobots) config.robotsRules = this.robots.rules;
-      let primary = null;
-      for (const [index, device] of config.devices.entries()) {
-        if (this.aborted) break;
-        const result = await this.auditDevice(device, index === 0);
-        if (index === 0) primary = result;
+      if (mode === 'ux') {
+        this.uxAuditor = new UxAuditor(this);
+        await this.uxAuditor.collect();
+        this.report.coverage.missingHints = {}; // a UX audit explores briefly, so absence means little
+        await this.reverify();
+      } else {
+        let primary = null;
+        for (const [index, device] of config.devices.entries()) {
+          if (this.aborted) break;
+          const result = await this.auditDevice(device, index === 0);
+          if (index === 0) primary = result;
+        }
+        await this.stage({name: config.devices[0]}, 'showtime sources', () => this.verifyShowtimes(config.devices[0]));
+        if (primary) await this.measurePerformance(config.devices[0], primary);
+        await this.reverify();
       }
-      await this.stage({name: config.devices[0]}, 'showtime sources', () => this.verifyShowtimes(config.devices[0]));
-      if (primary) await this.measurePerformance(config.devices[0], primary);
-      await this.reverify();
       this.finalize();
+      if (mode === 'ux') {
+        if (report.access.blocked) report.ux = {valid: false, reason: 'The site refused this audit, so no UX assessment can be made from it.'};
+        else if (report.actions.length) await this.uxAuditor.assess({expert: !this.aborted});
+        report.ai = this.ai.summary();
+      }
       if (mode === 'intelligent' && report.actions.length && !this.aborted && !report.access.blocked) {
         await this.aiReview();
         report.ai = this.ai.summary();
+        this.reportIntelligentBudget();
       }
       report.status = report.access.blocked ? 'BLOCKED_BY_SITE_PROTECTION' : this.aborted ? 'TIMED_OUT' : !report.actions.length ? 'NO_ACTIONS' : report.errors.length ? 'COMPLETED_WITH_LIMITATIONS' : 'COMPLETED';
     } catch (e) {
@@ -1030,15 +1100,27 @@ export class Audit {
       clearTimeout(deadline);
       for (const b of Object.values(this.browsers)) await b.close().catch(() => {});
       report.finishedAt = this.now().toISOString();
-      if (report.status === 'COMPLETED' || report.status === 'COMPLETED_WITH_LIMITATIONS') learnFromRun(this.memory, report, {stateMetrics: this.stateMetrics, lessons: this.lessons, timezone: config.timezone});
+      if (report.status === 'COMPLETED' || report.status === 'COMPLETED_WITH_LIMITATIONS') {
+        learnFromRun(this.memory, report, {stateMetrics: this.stateMetrics, lessons: this.lessons, timezone: config.timezone});
+        if (report.ux?.valid) report.ux.resolvedThisRun = learnUx(this.memory.ux, report.ux, report.finishedAt);
+      }
       else recordIncompleteRun(this.memory, report);
       report.history = this.memory.history.slice(-30);
+      if (report.ux?.valid) report.ux.journeyHistory = Object.fromEntries(report.ux.journeys.map(j => [j.key, this.memory.ux.journeys[j.key]?.runs || []]));
       saveReport(report, this.out);
       saveMemoryFile(this.memory, this.memoryFile);
     }
     this.log(`finished ${report.status}: ${report.actions.length} actions, ${report.findings.length} findings (${report.blockers} blockers), ${report.errors.length} limitations`);
     return report;
   }
+}
+
+function limitCalls(configured, budget) {
+  return budget === null ? configured : Math.min(configured, budget);
+}
+
+function checkContext(record, start) {
+  return {startCount: start.listing.count, executed: record.steps.filter(s => s.outcome === 'executed' && s.kind !== 'search').map(s => s.name)}; // typing a word is not using a filter
 }
 
 /** Which query parameters a step changed, added or removed. */

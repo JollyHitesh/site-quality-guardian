@@ -10,7 +10,7 @@ const argv = process.argv.slice(2);
 const flag = (name, fallback) => { const i = argv.indexOf(name); return i < 0 ? fallback : argv[i + 1] || fallback; };
 
 const mode = flag('--mode', 'smoke');
-if (!['smoke', 'intelligent'].includes(mode)) { console.error('Mode must be smoke or intelligent'); process.exit(64); }
+if (!['smoke', 'intelligent', 'ux'].includes(mode)) { console.error('Mode must be smoke, intelligent or ux'); process.exit(64); }
 
 const out = flag('--out', 'out');
 const site = flag('--site', null);
@@ -31,18 +31,22 @@ try {
   process.exit(64);
 }
 
+const budgetText = flag('--claude-budget', process.env.GUARDIAN_CLAUDE_BUDGET || null);
+if (budgetText !== null && (!/^\d{1,2}$/.test(budgetText) || Number(budgetText) > 30)) { console.error('Claude budget must be a whole number from 0 to 30'); process.exit(64); }
+const claudeBudget = budgetText === null ? null : Number(budgetText);
+
 const reports = [];
 let agentFailed = false;
 for (const config of configs) {
   const siteOut = path.join(out, config.slug);
   const memoryFile = flag('--memory', path.join('memory', `${config.slug}.json`));
-  const report = await new Audit({config, mode, out: siteOut, memoryFile, trace: argv.includes('--trace')}).run();
+  const report = await new Audit({config, mode, out: siteOut, memoryFile, trace: argv.includes('--trace'), claudeBudget}).run();
   reports.push({slug: config.slug, name: config.name, url: config.url, out: siteOut, report});
   if (report.status === 'FAILED' || report.status === 'NO_ACTIONS') agentFailed = true;
 }
 
 writeDashboardIndex(reports, out);
-const summary = {mode, finishedAt: new Date().toISOString(), blockers: reports.reduce((n, r) => n + r.report.blockers, 0), blockedBySite: reports.filter(r => r.report.status === 'BLOCKED_BY_SITE_PROTECTION').length, sites: reports.map(r => ({slug: r.slug, status: r.report.status, blockers: r.report.blockers, findings: r.report.findings.length}))};
+const summary = {mode, finishedAt: new Date().toISOString(), blockers: reports.reduce((n, r) => n + r.report.blockers, 0), blockedBySite: reports.filter(r => r.report.status === 'BLOCKED_BY_SITE_PROTECTION').length, budgetLimited: reports.filter(r => r.report.budget && !r.report.budget.complete).length, sites: reports.map(r => ({slug: r.slug, status: r.report.status, blockers: r.report.blockers, findings: r.report.findings.length, budget: r.report.budget || null}))};
 fs.writeFileSync(path.join(out, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
 console.log(JSON.stringify(summary));
 process.exit(agentFailed ? 1 : 0);

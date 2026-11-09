@@ -11,6 +11,12 @@ on:
         options:
           - smoke
           - intelligent
+          - ux
+      claude_budget:
+        description: "Most Claude calls this run may make, 0 to 30. Empty uses the repository default."
+        required: false
+        type: string
+        default: ''
       site:
         description: "Site file name without .json, or 'all'. Only 'all' updates the dashboard."
         required: true
@@ -83,15 +89,25 @@ jobs:
         run: |
           if [ -n "$TOKEN" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
 
+      - name: Keep the latest UX report on the dashboard
+        if: env.MODE != 'ux'
+        continue-on-error: true
+        env:
+          PAGES_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: node scripts/carry-ux-report.mjs "$PAGES_BASE" sites .previous-ux
+
       - name: Install Claude Code
-        if: env.MODE == 'intelligent' && steps.token.outputs.present == 'true'
+        if: (env.MODE == 'intelligent' || env.MODE == 'ux') && steps.token.outputs.present == 'true'
         run: npm install -g --no-audit --no-fund "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       # The token exists only in this step. Without it, the audit still runs and reports the limitation.
       - name: Run the read-only browser audit
         id: audit
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ env.MODE == 'intelligent' && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ (env.MODE == 'intelligent' || env.MODE == 'ux') && secrets.CLAUDE_CODE_OAUTH_TOKEN || '' }}
+          GUARDIAN_PREVIOUS_UX: .previous-ux
+          # Routine hosted audits stay within this unless a run or the repository sets another.
+          GUARDIAN_CLAUDE_BUDGET: ${{ inputs.claude_budget || vars.GUARDIAN_CLAUDE_BUDGET || '12' }}
         run: |
           set +e
           node src/cli.mjs --mode "$MODE" --site "$SITE"
@@ -131,6 +147,19 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: out/site
+
+      - name: Report the Claude call budget
+        if: steps.audit.outputs.completed == 'true'
+        run: |
+          limited="$(jq '.budgetLimited' out/summary.json)"
+          {
+            echo "### Claude call budget"
+            jq -r '.sites[] | "- \(.slug): \(if .budget then "\(.budget.used) of \(.budget.limit) calls, \(if .budget.complete then "complete" else "INCOMPLETE" end)" else "not used" end)"' out/summary.json
+            jq -r '.sites[].budget.shortfalls? // [] | .[] | "  - \(.)"' out/summary.json
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$limited" != "0" ]; then
+            echo "::warning::The Claude call budget prevented a complete review. See the report for what was not reviewed."
+          fi
 
       # Last on purpose: evidence and memory are saved before the run can go red.
       - name: Fail the run if the agent failed or a site is down
