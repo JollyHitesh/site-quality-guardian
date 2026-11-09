@@ -1,8 +1,8 @@
 {
  "schemaVersion": 2,
  "site": "ov-berlin",
- "runs": 2,
- "lastRun": "2026-11-08T15:43:13.569Z",
+ "runs": 3,
+ "lastRun": "2026-11-09T12:30:15.254Z",
  "history": [
   {
    "at": "2026-11-08T13:12:37.568Z",
@@ -68,6 +68,31 @@
     "FAILURE": 0,
     "INCOMPLETE": 0
    }
+  },
+  {
+   "at": "2026-11-09T12:30:15.254Z",
+   "mode": "ux",
+   "status": "COMPLETED_WITH_LIMITATIONS",
+   "actions": 54,
+   "states": 16,
+   "open": {
+    "P0": 0,
+    "P1": 0,
+    "P2": 1,
+    "P3": 3
+   },
+   "newFindings": 0,
+   "regressions": 0,
+   "transient": 0,
+   "showtimes": "NOT_VERIFIED",
+   "aiCalls": 12,
+   "lcpMs": 0,
+   "goals": {
+    "total": 6,
+    "SUCCESS": 5,
+    "FAILURE": 0,
+    "INCOMPLETE": 1
+   }
   }
  ],
  "coverage": {
@@ -76,9 +101,6 @@
    "mobile|button|map": 1,
    "mobile|button|cards": 1,
    "mobile|button|week": 1,
-   "mobile|button|open navigation menu": 1,
-   "mobile|button|what does this mean?": 1,
-   "mobile|button|show calendar": 1,
    "mobile|button|close filters": 1,
    "mobile|button|close menu": 1,
    "mobile-small|button|hide calendar": 1,
@@ -94,14 +116,11 @@
    "mobile-webkit|button|view: week": 1,
    "mobile-webkit|button|kids under 6": 1,
    "desktop|button|switch to week view": 1,
-   "desktop|button|english audio": 1,
    "desktop|button|german subtitles": 1,
    "mobile|link|more original-language movies →": 1,
    "mobile|button|more about this movie": 1,
-   "mobile|link|/cinemas/:slug": 1,
    "mobile|link|datenschutz": 1,
    "mobile|link|all cinemas →": 1,
-   "mobile|link|mitte": 1,
    "mobile|link|screenings": 1,
    "mobile|link|all cinemas": 1,
    "mobile|link|all original-language cinemas in berlin →": 1,
@@ -122,31 +141,62 @@
    "desktop|button|english subtitles": 1,
    "desktop|button|zoom in": 1,
    "desktop|button|zoom out": 1,
-   "mobile|button|filters": 2,
-   "mobile|button|view: list": 2,
+   "mobile|link|/guide/:slug": 1,
+   "mobile|link|back to screenings": 1,
+   "mobile|link|browse this week's original-language screenings →": 1,
+   "mobile|link|see today's screenings →": 1,
+   "mobile|link|browse ov cinemas": 1,
+   "mobile|link|o v berlin ov berlin — home": 1,
+   "mobile|button|best tonight": 1,
+   "mobile|button|new this week": 1,
+   "mobile|button|filters (1)": 1,
+   "mobile|button|award winners": 1,
+   "mobile|button|classic films": 1,
+   "mobile|button|documentaries": 1,
+   "mobile|button|anime": 1,
+   "mobile|link|english movies in berlin →": 1,
+   "mobile|link|all screenings": 1,
+   "mobile|button|done": 1,
+   "desktop|link|/movies/:slug": 1,
+   "desktop|button|new this week": 1,
+   "desktop|button|award winners": 1,
+   "desktop|button|classic films": 1,
+   "desktop|button|documentaries": 1,
+   "desktop|button|anime": 1,
+   "desktop|button|open navigation menu": 1,
+   "desktop|button|filters": 1,
+   "desktop|button|what does this mean?": 1,
+   "mobile|button|open navigation menu": 2,
+   "mobile|button|what does this mean?": 2,
+   "mobile|button|show calendar": 2,
+   "mobile|link|/cinemas/:slug": 2,
+   "mobile|link|mitte": 2,
    "mobile|button|tomorrow": 2,
    "desktop|button|switch to list view": 2,
    "desktop|button|switch to cards view": 2,
    "desktop|button|switch to map view": 2,
-   "mobile|link|/movies/:slug": 2,
-   "mobile|button|english": 3,
+   "desktop|button|english audio": 3,
+   "mobile|button|view: list": 3,
+   "mobile|link|/movies/:slug": 3,
    "mobile|button|german subtitles (omu)": 3,
+   "mobile|button|filters": 4,
+   "mobile|button|english": 4,
    "mobile|button|evening": 4,
    "mobile|button|mitte": 4,
    "mobile|button|tonight": 6,
    "mobile|button|english subtitles (omeu)": 8
   },
   "paths": {
-   "/": 2,
+   "/": 3,
    "/movies/sundays": 1,
    "/cinemas/hackesche-hoefe-kino": 1,
-   "/cinemas": 2,
+   "/cinemas": 3,
    "/guide": 2,
    "/blog": 1,
    "/datenschutz": 2,
-   "/english-movies-berlin": 2,
+   "/english-movies-berlin": 3,
    "/english-movies-berlin-today": 1,
-   "/movies/naza": 1,
+   "/movies/naza": 2,
    "/cinemas/acud-kino": 1,
    "/movies/minotaurus": 1,
    "/cinemas/neues-off": 1,
@@ -155,10 +205,14 @@
    "/omu-kino-berlin": 1,
    "/omeu-movies-berlin": 1,
    "/originalfassung-kino-berlin": 1,
-   "/guide/what-is-ov": 1,
-   "/ov-kino-mitte": 1,
+   "/guide/what-is-ov": 2,
+   "/ov-kino-mitte": 2,
    "/movies/staatsschutz": 1,
-   "/cinemas/alhambra": 1
+   "/cinemas/alhambra": 1,
+   "/movies/lgen-ber-meine-mutter": 1,
+   "/cinemas/bware-ladenkino": 1,
+   "/guide/ov-cinemas-berlin": 1,
+   "/guardian-ux-probe-not-a-real-page": 1
   }
  },
  "states": {
@@ -195,14 +249,27 @@
   "/movies/:slug#75bc68228b": 1,
   "/cinemas/:slug#f0fcde843f": 1,
   "/datenschutz#61a0896657": 1,
-  "/cinemas#0eab9bb2e5": 1,
-  "/ov-kino-mitte#3d65cb9742": 1,
-  "/english-movies-berlin#1ef49aecdc": 1,
+  "/cinemas#0eab9bb2e5": 2,
+  "/ov-kino-mitte#3d65cb9742": 2,
+  "/english-movies-berlin#1ef49aecdc": 2,
   "/movies/:slug#e1a1300dad": 1,
   "/#b31e6a77bc": 1,
   "/#49250ea90d": 1,
   "/guide#31a21895be": 1,
-  "/#efd939d2e5": 1
+  "/#efd939d2e5": 1,
+  "/#91d54b46f4": 1,
+  "/guide/:slug#3d33f6e081": 1,
+  "/#7bff01076e": 1,
+  "/#376cccd01d": 1,
+  "/#7bed9391db": 1,
+  "/#9514322eb5": 1,
+  "/#129e744802": 1,
+  "/#57cdca4f46": 1,
+  "/#d71298a18b": 1,
+  "/#5869ebf23c": 1,
+  "/#7c3e405c00": 1,
+  "/#941d277656": 1,
+  "/#5da011a204": 1
  },
  "baselines": {
   "mobile|/#3317925a37": {
@@ -716,55 +783,65 @@
   },
   "mobile|/cinemas#0eab9bb2e5": {
    "itemCount": [
+    46,
     46
    ],
    "textLength": [
-    10165
+    10165,
+    10169
    ],
    "controlCount": [
+    286,
     286
    ],
    "headings": {
-    "Original-language cinemas in Berlin": 1,
-    "BROWSE BY DISTRICT": 1
+    "Original-language cinemas in Berlin": 2,
+    "BROWSE BY DISTRICT": 2
    }
   },
   "mobile|/ov-kino-mitte#3d65cb9742": {
    "itemCount": [
+    4,
     4
    ],
    "textLength": [
-    4798
+    4798,
+    5164
    ],
    "controlCount": [
-    127
+    127,
+    149
    ],
    "headings": {
-    "OV Kino Mitte: Original-Language Cinema": 1,
+    "OV Kino Mitte: Original-Language Cinema": 2,
+    "Movies showing in Mitte today": 2,
+    "OV cinemas in Mitte": 2,
+    "OV cinema in other Berlin districts": 2,
+    "Frequently asked questions": 2,
     "OV, OmU & OmeU screenings in Mitte today (31)": 1,
-    "Movies showing in Mitte today": 1,
-    "OV cinemas in Mitte": 1,
-    "OV cinema in other Berlin districts": 1,
-    "Frequently asked questions": 1
+    "OV, OmU & OmeU screenings in Mitte today (42)": 1
    }
   },
   "mobile|/english-movies-berlin#1ef49aecdc": {
    "itemCount": [
+    4,
     4
    ],
    "textLength": [
-    10960
+    10960,
+    10899
    ],
    "controlCount": [
+    279,
     279
    ],
    "headings": {
-    "English movies in Berlin": 1,
-    "Original-version screenings today (66)": 1,
-    "Films showing in English today": 1,
-    "Berlin cinemas with English-language screenings": 1,
-    "Browse by district": 1,
-    "Frequently asked questions": 1
+    "English movies in Berlin": 2,
+    "Original-version screenings today (66)": 2,
+    "Films showing in English today": 2,
+    "Berlin cinemas with English-language screenings": 2,
+    "Browse by district": 2,
+    "Frequently asked questions": 2
    }
   },
   "mobile|/movies/:slug#e1a1300dad": {
@@ -954,6 +1031,193 @@
     "Original Version Movies in Berlin": 2,
     "🎬 OPENING THIS WEEK": 1
    }
+  },
+  "mobile|/#91d54b46f4": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8320
+   ],
+   "controlCount": [
+    327
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/guide/:slug#3d33f6e081": {
+   "itemCount": [
+    10
+   ],
+   "textLength": [
+    4666
+   ],
+   "controlCount": [
+    45
+   ],
+   "headings": {
+    "What Does OV Mean in German Cinemas?": 1,
+    "Why OV matters in Germany": 1,
+    "The three formats: OV, OmU, OmeU": 1,
+    "Which Berlin cinemas regularly show OV films?": 1
+   }
+  },
+  "mobile|/#7bff01076e": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8951
+   ],
+   "controlCount": [
+    384
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "Filters": 1
+   }
+  },
+  "mobile|/#376cccd01d": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8340
+   ],
+   "controlCount": [
+    331
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#7bed9391db": {
+   "itemCount": [
+    3
+   ],
+   "textLength": [
+    5373
+   ],
+   "controlCount": [
+    163
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#9514322eb5": {
+   "itemCount": [
+    8
+   ],
+   "textLength": [
+    6014
+   ],
+   "controlCount": [
+    221
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2,
+    "Filters": 1
+   }
+  },
+  "mobile|/#129e744802": {
+   "itemCount": [
+    5
+   ],
+   "textLength": [
+    5256
+   ],
+   "controlCount": [
+    158
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#57cdca4f46": {
+   "itemCount": [
+    5
+   ],
+   "textLength": [
+    5277
+   ],
+   "controlCount": [
+    158
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#d71298a18b": {
+   "itemCount": [
+    6
+   ],
+   "textLength": [
+    5587
+   ],
+   "controlCount": [
+    177
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#5869ebf23c": {
+   "itemCount": [
+    5
+   ],
+   "textLength": [
+    5176
+   ],
+   "controlCount": [
+    153
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#7c3e405c00": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8415
+   ],
+   "controlCount": [
+    337
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#941d277656": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8454
+   ],
+   "controlCount": [
+    328
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
+  },
+  "mobile|/#5da011a204": {
+   "itemCount": [
+    39
+   ],
+   "textLength": [
+    8398
+   ],
+   "controlCount": [
+    336
+   ],
+   "headings": {
+    "Original Version Movies in Berlin": 2
+   }
   }
  },
  "findings": {
@@ -1087,10 +1351,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/",
     "/movies/:slug"
@@ -1111,10 +1375,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/",
     "/movies/:slug",
@@ -1144,10 +1408,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/"
    ],
@@ -1167,36 +1431,11 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
-    "/"
-   ],
-   "devices": [
-    "mobile",
-    "mobile-small",
-    "mobile-webkit"
-   ]
-  },
-  "tap-target-too-small-7823b132": {
-   "title": "Touch targets below the 24px minimum and crowded by neighbours",
-   "kind": "tap-target-too-small",
-   "severity": "P2",
-   "firstSeen": "2026-11-08T15:27:26.621Z",
-   "lastSeen": "2026-11-08T15:43:13.569Z",
-   "resolvedAt": null,
-   "state": "open",
-   "scope": "",
-   "seenRuns": 2,
-   "misses": 0,
-   "regressions": 0,
-   "transients": 0,
-   "bits": "11",
-   "pages": [
-    "/movies/:slug",
-    "/guide/:slug",
     "/"
    ],
    "devices": [
@@ -1215,10 +1454,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/movies/:slug"
    ],
@@ -1238,10 +1477,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/cinemas/:slug",
     "/cinemas"
@@ -1262,10 +1501,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/"
    ],
@@ -1312,10 +1551,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/"
    ],
@@ -1333,117 +1572,15 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/"
    ],
    "devices": [
     "desktop"
-   ]
-  },
-  "csp-blocked-2c5f9f77": {
-   "title": "Content-Security-Policy blocks requests to static.cloudflareinsights.com",
-   "kind": "csp-blocked",
-   "severity": "P3",
-   "firstSeen": "2026-11-08T15:27:26.621Z",
-   "lastSeen": "2026-11-08T15:43:13.569Z",
-   "resolvedAt": null,
-   "state": "open",
-   "scope": "",
-   "seenRuns": 2,
-   "misses": 0,
-   "regressions": 0,
-   "transients": 0,
-   "bits": "11",
-   "pages": [
-    "/",
-    "/movies/:slug",
-    "/cinemas/:slug",
-    "/ov-movies-berlin",
-    "/ov-kino-berlin",
-    "/omu-kino-berlin",
-    "/omeu-movies-berlin",
-    "/originalfassung-kino-berlin",
-    "/guide/:slug",
-    "/datenschutz",
-    "/cinemas",
-    "/ov-kino-mitte"
-   ],
-   "devices": [
-    "mobile",
-    "mobile-small",
-    "desktop"
-   ]
-  },
-  "tap-target-comfort-bb47ebfc": {
-   "title": "Touch targets under the recommended 44px height",
-   "kind": "tap-target-comfort",
-   "severity": "P3",
-   "firstSeen": "2026-11-08T15:27:26.621Z",
-   "lastSeen": "2026-11-08T15:43:13.569Z",
-   "resolvedAt": null,
-   "state": "open",
-   "scope": "",
-   "seenRuns": 2,
-   "misses": 0,
-   "regressions": 0,
-   "transients": 0,
-   "bits": "11",
-   "pages": [
-    "/",
-    "/movies/:slug",
-    "/cinemas/:slug",
-    "/ov-movies-berlin",
-    "/ov-kino-berlin",
-    "/omu-kino-berlin",
-    "/omeu-movies-berlin",
-    "/originalfassung-kino-berlin",
-    "/guide/:slug",
-    "/datenschutz",
-    "/cinemas",
-    "/ov-kino-mitte"
-   ],
-   "devices": [
-    "mobile",
-    "mobile-small",
-    "mobile-webkit"
-   ]
-  },
-  "small-text-b9ba4810": {
-   "title": "Text smaller than 12px is hard to read on phones",
-   "kind": "small-text",
-   "severity": "P3",
-   "firstSeen": "2026-11-08T15:27:26.621Z",
-   "lastSeen": "2026-11-08T15:43:13.569Z",
-   "resolvedAt": null,
-   "state": "open",
-   "scope": "",
-   "seenRuns": 2,
-   "misses": 0,
-   "regressions": 0,
-   "transients": 0,
-   "bits": "11",
-   "pages": [
-    "/",
-    "/movies/:slug",
-    "/cinemas/:slug",
-    "/ov-movies-berlin",
-    "/ov-kino-berlin",
-    "/omu-kino-berlin",
-    "/omeu-movies-berlin",
-    "/originalfassung-kino-berlin",
-    "/guide/:slug",
-    "/datenschutz",
-    "/cinemas",
-    "/ov-kino-mitte"
-   ],
-   "devices": [
-    "mobile",
-    "mobile-small",
-    "mobile-webkit"
    ]
   },
   "performance-tbtMs-ea508dbb": {
@@ -1456,10 +1593,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/",
     "/movies/:slug"
@@ -1478,10 +1615,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 2,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "11",
+   "bits": "110",
    "pages": [
     "/"
    ],
@@ -1499,10 +1636,10 @@
    "state": "open",
    "scope": "",
    "seenRuns": 1,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "1",
+   "bits": "10",
    "pages": [
     "/movies/:slug"
    ],
@@ -1539,15 +1676,119 @@
    "state": "open",
    "scope": "",
    "seenRuns": 1,
-   "misses": 0,
+   "misses": 1,
    "regressions": 0,
    "transients": 0,
-   "bits": "1",
+   "bits": "10",
    "pages": [
     "/movies/:slug"
    ],
    "devices": [
     "desktop"
+   ]
+  },
+  "tap-target-too-small-7823b132": {
+   "title": "Touch targets below the 24px minimum and crowded by neighbours",
+   "kind": "tap-target-too-small",
+   "severity": "P2",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-09T12:30:15.254Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 3,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "111",
+   "pages": [
+    "/guide/:slug",
+    "/"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "csp-blocked-2c5f9f77": {
+   "title": "Content-Security-Policy blocks requests to static.cloudflareinsights.com",
+   "kind": "csp-blocked",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-09T12:30:15.254Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 3,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "111",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/guide/:slug",
+    "/cinemas",
+    "/ov-kino-mitte",
+    "/english-movies-berlin"
+   ],
+   "devices": [
+    "mobile",
+    "desktop"
+   ]
+  },
+  "tap-target-comfort-bb47ebfc": {
+   "title": "Touch targets under the recommended 44px height",
+   "kind": "tap-target-comfort",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-09T12:30:15.254Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 3,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "111",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/guide/:slug",
+    "/cinemas",
+    "/ov-kino-mitte",
+    "/english-movies-berlin"
+   ],
+   "devices": [
+    "mobile"
+   ]
+  },
+  "small-text-b9ba4810": {
+   "title": "Text smaller than 12px is hard to read on phones",
+   "kind": "small-text",
+   "severity": "P3",
+   "firstSeen": "2026-11-08T15:27:26.621Z",
+   "lastSeen": "2026-11-09T12:30:15.254Z",
+   "resolvedAt": null,
+   "state": "open",
+   "scope": "",
+   "seenRuns": 3,
+   "misses": 0,
+   "regressions": 0,
+   "transients": 0,
+   "bits": "111",
+   "pages": [
+    "/",
+    "/movies/:slug",
+    "/cinemas/:slug",
+    "/guide/:slug",
+    "/cinemas",
+    "/ov-kino-mitte",
+    "/english-movies-berlin"
+   ],
+   "devices": [
+    "mobile"
    ]
   }
  },
@@ -1609,6 +1850,593 @@
   "www.ilkino.de": {
    "attempts": 1,
    "useful": 0
+  }
+ },
+ "ux": {
+  "issues": {
+   "ux-tap-target-too-small-02259007cd": {
+    "title": "Some controls are below 24px and crowded by neighbours.",
+    "criterion": "V-mobile-layout",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "tap-target-too-small",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/guide/:slug",
+     "/"
+    ],
+    "devices": [
+     "mobile"
+    ],
+    "signature": "bbe1b01d8ffc"
+   },
+   "ux-journey-excess-actions-74e7226233": {
+    "title": "Find films with English audio: The successful path took 3 actions. The target is 2.",
+    "criterion": "E-action-target",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "journey-excess-actions",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "mobile"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-primary-content-late-3fdab2bc38": {
+    "title": "Main content starts at 1369px on a 1080px-tall screen, at 127% of the first screen height.",
+    "criterion": "V-primary-position",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "primary-content-late",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "tablet",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-legibility-limits-00175d5f99": {
+    "title": "Most text on this page is 12px, below the 14px limit.",
+    "criterion": "V-legibility",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "legibility-limits",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug",
+     "/cinemas/:slug",
+     "/"
+    ],
+    "devices": [
+     "mobile",
+     "tablet",
+     "desktop"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-low-affordance-a2f81663f9": {
+    "title": "1 button(s) have no fill, border, underline or icon, for example \"View experience details for b-ware! ladenkino\".",
+    "criterion": "V-affordance",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "low-affordance",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug"
+    ],
+    "devices": [
+     "mobile",
+     "tablet",
+     "desktop"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-control-overload-c61dcc700d": {
+    "title": "The first screen has 51 interactive controls. The limit for this device is 45.",
+    "criterion": "V-density",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "control-overload",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/",
+     "/cinemas/:slug"
+    ],
+    "devices": [
+     "tablet",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-nav-label-conflict-6cae0c2df0": {
+    "title": "The navigation label \"omu kino berlin\" points to different destinations: /guide/omu-kino-berlin, /omu-kino-berlin.",
+    "criterion": "D-link-labels",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "nav-label-conflict",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/guide/:slug"
+    ],
+    "devices": [
+     "mobile",
+     "tablet",
+     "desktop"
+    ],
+    "signature": "bbe1b01d8ffc"
+   },
+   "ux-kb-order-jumps-b1e928a26b": {
+    "title": "Tab order jumps backwards up the page 1 time(s), for example from \"Cinema details →\" to \"CAST & DETAILS\".",
+    "criterion": "A-order",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "kb-order-jumps",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug"
+    ],
+    "devices": [
+     "desktop"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-button-style-sprawl-671eb8d736": {
+    "title": "15 different button styles appear on this page.",
+    "criterion": "V-consistency",
+    "provenance": "measured",
+    "class": "detected-defect",
+    "kind": "button-style-sprawl",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug",
+     "/"
+    ],
+    "devices": [
+     "mobile",
+     "tablet",
+     "desktop"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-expert-a4eab81b9c": {
+    "title": "OV/OmU/OmeU codes used without definition",
+    "criterion": "X-language",
+    "provenance": "expert",
+    "class": "expert-judgment",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "mobile",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-expert-3ed8e07ef6": {
+    "title": "Desktop and tablet film page puts cast and details ahead of showtimes",
+    "criterion": "X-efficiency",
+    "provenance": "expert",
+    "class": "expert-judgment",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug"
+    ],
+    "devices": [
+     "desktop",
+     "tablet",
+     "mobile"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-expert-06afb56f1f": {
+    "title": "Landing page stacks several promotional modules above the film list",
+    "criterion": "X-minimalism",
+    "provenance": "expert",
+    "class": "expert-judgment",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "tablet",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-expert-e6c96b3aa0": {
+    "title": "Film page actions and navigation differ by breakpoint",
+    "criterion": "X-consistency",
+    "provenance": "expert",
+    "class": "expert-judgment",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/movies/:slug"
+    ],
+    "devices": [
+     "mobile",
+     "tablet",
+     "desktop"
+    ],
+    "signature": "88409120fcc8"
+   },
+   "ux-expert-36c861fbd7": {
+    "title": "Duplicated quick chips, dropdowns and date controls",
+    "criterion": "X-cognitive-load",
+    "provenance": "expert",
+    "class": "research-needed",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "tablet",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-expert-2a2b61f663": {
+    "title": "Mobile navigation and calendar are icon-only",
+    "criterion": "X-discoverability",
+    "provenance": "expert",
+    "class": "research-needed",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/",
+     "/movies/:slug"
+    ],
+    "devices": [
+     "mobile",
+     "tablet"
+    ],
+    "signature": "4e8622f0785d"
+   },
+   "ux-expert-9342bc2af5": {
+    "title": "Filter badge count does not match visible filter; result counts not shown",
+    "criterion": "X-status",
+    "provenance": "expert",
+    "class": "research-needed",
+    "kind": "expert",
+    "state": "open",
+    "resolution": "",
+    "firstSeen": "2026-11-09T12:30:15.254Z",
+    "lastSeen": "2026-11-09T12:30:15.254Z",
+    "resolvedAt": null,
+    "seenRuns": 1,
+    "misses": 0,
+    "regressions": 0,
+    "templates": [
+     "/"
+    ],
+    "devices": [
+     "mobile",
+     "desktop"
+    ],
+    "signature": "4e8622f0785d"
+   }
+  },
+  "journeys": {
+   "english-audio@mobile": {
+    "title": "Find films with English audio",
+    "path": [
+     "button|filters",
+     "button|english",
+     "button|done"
+    ],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "SUCCESS",
+      "actions": 3,
+      "backtracks": 0,
+      "automationElapsedMs": 5432
+     }
+    ]
+   },
+   "film-tickets@mobile": {
+    "title": "Open a film and find where to get tickets",
+    "path": [
+     "link|/movies/:slug"
+    ],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "SUCCESS",
+      "actions": 1,
+      "backtracks": 0,
+      "automationElapsedMs": 2796
+     }
+    ]
+   },
+   "cinema-programme@mobile": {
+    "title": "Open a cinema's page to see what it shows",
+    "path": [
+     "link|/cinemas/:slug"
+    ],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "SUCCESS",
+      "actions": 1,
+      "backtracks": 0,
+      "automationElapsedMs": 3254
+     }
+    ]
+   },
+   "english-audio@desktop": {
+    "title": "Find films with English audio",
+    "path": [
+     "button|english audio"
+    ],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "SUCCESS",
+      "actions": 1,
+      "backtracks": 0,
+      "automationElapsedMs": 3025
+     }
+    ]
+   },
+   "film-tickets@desktop": {
+    "title": "Open a film and find where to get tickets",
+    "path": [
+     "link|/movies/:slug"
+    ],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "SUCCESS",
+      "actions": 1,
+      "backtracks": 0,
+      "automationElapsedMs": 2962
+     }
+    ]
+   },
+   "cinema-programme@desktop": {
+    "title": "Open a cinema's page to see what it shows",
+    "path": [],
+    "runs": [
+     {
+      "at": "2026-11-09T12:30:15.254Z",
+      "outcome": "INCOMPLETE",
+      "actions": 0,
+      "backtracks": 0,
+      "automationElapsedMs": 0
+     }
+    ]
+   }
+  },
+  "proposed": [],
+  "scoreHistory": [
+   {
+    "at": "2026-11-09T12:30:15.254Z",
+    "rubric": "ab0b2c98",
+    "journeySet": "97b68c87",
+    "pages": [
+     "/",
+     "/movies/:slug",
+     "/cinemas/:slug",
+     "/guide/:slug"
+    ],
+    "categories": {
+     "discoverability": {
+      "score": 86,
+      "coverage": 1
+     },
+     "task-efficiency": {
+      "score": 89,
+      "coverage": 1
+     },
+     "clarity": {
+      "score": 100,
+      "coverage": 1
+     },
+     "visual-design": {
+      "score": 47,
+      "coverage": 1
+     },
+     "accessibility": {
+      "score": 93,
+      "coverage": 1
+     }
+    }
+   }
+  ],
+  "signatures": {
+   "/": "4e8622f0785d",
+   "/movies/:slug": "88409120fcc8",
+   "/cinemas/:slug": "91479856c9bb",
+   "/guide/:slug": "bbe1b01d8ffc"
+  },
+  "stablePages": [
+   "/movies/:slug",
+   "/cinemas/:slug"
+  ],
+  "coverage": {
+   "templates": {
+    "/": 1,
+    "/movies/:slug": 1,
+    "/cinemas/:slug": 1,
+    "/guide/:slug": 1
+   },
+   "criteria": {
+    "E-journey-success": 1,
+    "E-action-target": 1,
+    "E-backtrack": 1,
+    "E-dead-ends": 1,
+    "E-interstitial": 1,
+    "C-result-visible": 1,
+    "C-feedback": 1,
+    "V-primary-position": 1,
+    "V-h1": 1,
+    "V-legibility": 1,
+    "V-affordance": 1,
+    "V-consistency": 1,
+    "V-density": 1,
+    "D-hover": 1,
+    "D-link-labels": 1,
+    "D-key-controls": 1,
+    "V-mobile-layout": 1,
+    "A-axe": 1,
+    "A-focus-visible": 1,
+    "A-reachable": 1,
+    "A-order": 1,
+    "A-dialog": 1,
+    "A-focus-recovery": 1,
+    "A-semantics": 1,
+    "C-recovery": 1,
+    "V-parity": 1,
+    "X-language": 1,
+    "X-recognition": 1,
+    "X-help": 1,
+    "X-ia": 1,
+    "X-minimalism": 1,
+    "X-cognitive-load": 1,
+    "X-progressive": 1,
+    "X-efficiency": 1,
+    "X-status": 1,
+    "X-control": 1,
+    "X-prevention": 1,
+    "X-recovery": 1,
+    "X-hierarchy": 1,
+    "X-density": 1,
+    "X-legibility": 1,
+    "X-spacing": 1,
+    "X-affordance": 1,
+    "X-consistency": 1,
+    "X-discoverability": 1,
+    "X-feedback": 1,
+    "X-responsive": 1
+   },
+   "keyboard": {
+    "button|english audio": 1,
+    "button|new this week": 1,
+    "button|award winners": 1,
+    "button|classic films": 1,
+    "button|documentaries": 1,
+    "button|anime": 1,
+    "button|open navigation menu": 1,
+    "button|filters": 1,
+    "button|what does this mean?": 1
+   }
   }
  }
 }
