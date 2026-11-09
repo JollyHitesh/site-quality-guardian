@@ -21,6 +21,7 @@ import {buildScorecard, compareScores} from './ux-scorecard.mjs';
 import {designSignature, reconcileIssues, chooseUxPages, orderKeyboardControls, orderBatches, priorHypotheses} from './ux-memory.mjs';
 
 const pathOf = url => { try { return new URL(url).pathname; } catch { return String(url).slice(0, 80); } };
+const KEY_WAIT_MS = 3500;
 const NARROW_WINDOW = {width: 390, height: 844};
 const NOT_FOUND_PROBE = '/guardian-ux-probe-not-a-real-page';
 const NOT_FOUND_TEXT = /not found|404|does ?n.t exist|no longer|nicht gefunden|existiert nicht|gibt es nicht/i;
@@ -368,7 +369,8 @@ export class UxAuditor {
     await ctx.page.setViewportSize(NARROW_WINDOW);
     await a.freshStart(ctx);
     const revealers = this.activationCandidates(await observe(ctx.page, ctx.cfg)).filter(c => (c.expanded !== null && c.expanded !== undefined) || /filter|menu|view|options/i.test(c.name));
-    for (const candidate of revealers.slice(0, this.ux.keyboardNarrowControls)) {
+    const panelsFirst = [...revealers].sort((x, y) => Number(/filter|menu/i.test(y.name)) - Number(/filter|menu/i.test(x.name)));
+    for (const candidate of panelsFirst.slice(0, this.ux.keyboardNarrowControls)) {
       if (a.aborted) return;
       await a.stage(ctx, `keyboard, narrow window: ${cleanText(candidate.name, 30)}`, () => this.activateByKeyboard(ctx, controlKey(candidate), {narrow: true}));
     }
@@ -392,10 +394,10 @@ export class UxAuditor {
     const startUrl = page.url();
     const signature = await stateSignature(page);
     await page.keyboard.press('Enter');
-    let changed = await waitForChange(page, signature, 1500);
+    let changed = await waitForChange(page, signature, KEY_WAIT_MS);
     if (!changed) {
       await page.keyboard.press('Space');
-      changed = await waitForChange(page, signature, 1500);
+      changed = await waitForChange(page, signature, KEY_WAIT_MS);
     }
     await page.waitForTimeout(400);
     if (!isAllowedUrl(page.url(), ctx.cfg)) return;
@@ -415,10 +417,22 @@ export class UxAuditor {
       await a.freshStart(ctx);
       const again = locateControl(await observe(page, ctx.cfg), key, controlKey);
       if (again) {
-        const result = await act(page, again, ctx.cfg, {changeTimeout: 2500});
+        const result = await act(page, again, ctx.cfg, {changeTimeout: KEY_WAIT_MS});
         entry.mouseWorks = !!(result.ok && (result.changed || result.navigated));
       }
+      // A slow page must not read as a keyboard failure, so a failure has to happen twice.
+      if (entry.mouseWorks) entry.keyboardWorks = await this.retryKeyboard(ctx, key);
     }
+  }
+
+  async retryKeyboard(ctx, key) {
+    await this.a.freshStart(ctx);
+    const control = locateControl(await observe(ctx.page, ctx.cfg), key, controlKey);
+    if (!control) return null;
+    await ctx.page.locator(`css=${control.css}`).first().focus({timeout: 3000});
+    const signature = await stateSignature(ctx.page);
+    await ctx.page.keyboard.press('Enter');
+    return waitForChange(ctx.page, signature, KEY_WAIT_MS * 2);
   }
 
   /** Compares what desktop navigation offers against what the phone exposes. */
