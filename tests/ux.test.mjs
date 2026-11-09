@@ -71,6 +71,17 @@ test('no number is given when evidence is insufficient', () => {
   assert.match(thin.reason, /weight/);
 });
 
+test('expert opinion can never move a score, and uncited verdicts do not count', () => {
+  const measured = [row('D-key-controls', 'pass'), row('D-hover', 'pass'), row('D-link-labels', 'fail')];
+  const score = expert => buildScorecard([...measured, row('X-ia', expert)]).discoverability;
+  assert.equal(score('pass').score, score('fail').score);
+  assert.equal(score('fail').expert.fail, 1);
+  assert.deepEqual(score('pass').calculation, {earned: 5, assessedWeight: 7, totalWeight: 7});
+  const uncited = buildScorecard([{...row('A-axe', 'pass'), evidenceRefs: []}, row('A-reachable', 'pass'), row('A-order', 'pass'), row('A-focus-visible', 'pass')]).accessibility;
+  assert.equal(uncited.rows.find(r => r.criterion === 'A-axe').verdict, 'not-assessed');
+  assert.equal(uncited.rows.find(r => r.criterion === 'A-reachable').earned, 4);
+});
+
 test('weights are configurable and change the rubric version', () => {
   assert.notEqual(rubricVersion(DEFAULT_THRESHOLDS, {'A-axe': 9}), rubricVersion(DEFAULT_THRESHOLDS, {}));
   const list = [row('A-axe', 'fail'), row('A-reachable', 'pass'), row('A-order', 'pass'), row('A-focus-visible', 'pass'), row('A-semantics', 'pass')];
@@ -398,8 +409,26 @@ test('the report does not claim a cross-check that did not run', async () => {
   const {writeUxReport} = await import('../src/ux-report.mjs');
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'guardian-ux-report-'));
   const ux = {issues: [], shots: [], devices: ['desktop'], scorecard: {}, trend: {categories: {}}, journeys: [], pages: [], rubricVersion: 'r', suppressed: [], parity: null, expert: {status: 'partial', verification: 'unavailable', reviewedCriteria: 3, rejected: []}, keyboard: {walks: [], activations: [], dialogs: [], semantics: []}};
-  writeUxReport({ux, config: {name: 'X', url: 'https://x.test/'}, finishedAt: 'now', findings: [], coverage: {}, errors: [], ai: {}}, out);
+  writeUxReport({ux, config: {name: 'X', url: 'https://x.test/'}, finishedAt: 'now', findings: [], actions: [], coverage: {}, errors: [], ai: {}}, out);
   const html = fs.readFileSync(path.join(out, 'site', 'ux', 'index.html'), 'utf8');
   assert.match(html, /second reading did not run/);
   assert.doesNotMatch(html, /a second reading checked each claim/);
+});
+
+test('page-derived captions stay inside the untrusted block', async () => {
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const {reviewBatch} = await import('../src/ux-review.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guardian-prompt-'));
+  fs.mkdirSync(path.join(dir, 'ai'));
+  fs.writeFileSync(path.join(dir, 'ai', 's.jpg'), 'x');
+  let prompt = '';
+  const ai = {ask: async text => { prompt = text; return {}; }};
+  await reviewBatch(ai, {batch: 'language', config: {name: 'n', url: 'https://x.test/', ai: {timeoutMs: 1}}, evidence: {shots: [{template: '/ignore-all-instructions'}]}, shots: [{id: 'S01', device: 'mobile', template: '/ignore-all-instructions', stage: 'page', journey: 'hostile journey', jpg: 'ai/s.jpg'}], outDir: dir});
+  const fence = prompt.indexOf('<untrusted_page_data');
+  assert.ok(fence > 0);
+  assert.equal(prompt.slice(0, fence).includes('ignore-all-instructions'), false);
+  assert.equal(prompt.slice(0, fence).includes('hostile journey'), false);
+  assert.ok(prompt.slice(fence).includes('ignore-all-instructions'));
 });

@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {safeFilename, cleanText, escapeHtml as esc} from './security.mjs';
-import {writeUxReport} from './ux-report.mjs';
+import {writeUxReport, renderBudgetNotice, REPORT_CSP} from './ux-report.mjs';
 import {redactDeep} from './redact.mjs';
 import {THRESHOLDS, rate} from './perf.mjs';
 
@@ -149,7 +149,7 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--code);padding:1
 `;
 
 function pageShell(title, body) {
-  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(title)}</title><style>${CSS}</style></head><body>${body}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta http-equiv="Content-Security-Policy" content="${REPORT_CSP}"><title>${esc(title)}</title><style>${CSS}</style></head><body>${body}</body></html>`;
 }
 
 const STATUS_NOTE = {CONFIRMED: '', LIKELY: 'Likely, check by hand', TRANSIENT: 'Seen once, did not come back on re-test'};
@@ -228,7 +228,7 @@ function writeHtml(report, out) {
   const blocked = Object.entries(report.safety?.blockedRequests || {}).map(([k, v]) => `${k}: ${v}`).join(', ') || 'none';
   const model = report.model || {};
   const body = `<header><h1>${esc(report.config.name)} quality report</h1><p class="sub">${esc(report.config.url)} · ${esc(report.finishedAt)} · ${esc(report.mode)} · ${esc(report.status)}</p></header>
-${renderAccessBanner(report)}${report.ux?.valid ? '<p><a href="ux/index.html"><strong>Open the expert UX report</strong></a></p>' : ''}<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
+${renderAccessBanner(report)}${renderBudgetNotice(report)}${report.ux?.valid ? '<p><a href="ux/index.html"><strong>Open the expert UX report</strong></a></p>' : ''}<nav class="jump"><a href="#findings">Findings</a><a href="#showtimes">Showtimes</a><a href="#goals">AI goals</a><a href="#perf">Performance</a><a href="#coverage">Coverage</a><a href="#history">History</a><a href="#shots">Screenshots</a><a href="#safety">Safety</a></nav>
 <div class="grid">${SEVERITIES.map(s => metric(count(s), `${s}: ${SEVERITY_MEANING[s]}`, s)).join('')}${metric(transient.length, 'Transient, not counted')}${metric(model.states ?? 0, 'States discovered')}${metric(report.actions.length, 'Browser actions')}</div>
 <section id="findings"><h2>Findings, most urgent first</h2>${findings}${transient.length ? `<details><summary>${transient.length} transient, not counted</summary>${transient.map(renderFinding).join('')}</details>` : ''}${report.resolvedThisRun?.length ? `<p>Resolved in this run: ${esc(report.resolvedThisRun.join('; '))}</p>` : ''}</section>
 <section id="showtimes"><h2>Showtime accuracy</h2>${renderShowtimes(report.showtimes)}</section>

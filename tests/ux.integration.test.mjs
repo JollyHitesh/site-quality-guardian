@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {spawn} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {startUxFixture, uxConfig} from './fixtures/ux-sites.mjs';
 
@@ -100,7 +100,7 @@ test('planted UX anti-patterns are found, each with evidence, and history works'
 
   // The owner's report.
   const html = fs.readFileSync(path.join(dir, 'out', 'fixture', 'site', 'ux', 'index.html'), 'utf8');
-  for (const text of ['What visitors are trying to do', 'Where the design makes it harder', 'What should change first', 'How we will know it worked', 'not a conformance statement', 'Detected by measurement', 'Expert judgement', 'Needs user research', 'noindex']) assert.ok(html.includes(text), text);
+  for (const text of ['What visitors are trying to do', 'Where the design makes it harder', 'What should change first', 'How we will know it worked', 'not a conformance statement', 'Measured defects', 'Expert design hypotheses', 'Ideas needing user research', 'Evidence index', 'do not affect any score', 'Content-Security-Policy', 'noindex']) assert.ok(html.includes(text), text);
   assert.doesNotMatch(html, /satisfaction score/i);
   assert.ok(fs.readFileSync(path.join(dir, 'out', 'fixture', 'ux-report.md'), 'utf8').includes('Acceptance'));
   assert.ok(fs.existsSync(path.join(dir, 'out', 'site', 'fixture', 'ux', 'index.html')), 'the dashboard includes the report');
@@ -128,7 +128,7 @@ test('a well-built site produces no measured UX problems', {skip, timeout: 30000
   const {ux} = report;
   const measured = ux.issues.filter(i => i.provenance === 'measured');
   assert.deepEqual(measured.map(i => `${i.kind}: ${i.title}`), [], 'false positives on the control site');
-  for (const c of Object.values(ux.scorecard)) assert.equal(c.measuredScore, 100, c.label);
+  for (const c of Object.values(ux.scorecard)) assert.equal(c.score, 100, c.label);
   assert.equal(ux.keyboard.dialogs.length, 1, 'the dialog was really tested');
   const dialog = ux.keyboard.dialogs[0];
   assert.deepEqual([dialog.semantic, dialog.focusMoved, dialog.escapedFocus, dialog.escapeCloses, dialog.focusRestored], [true, true, 0, true, true]);
@@ -136,6 +136,33 @@ test('a well-built site produces no measured UX problems', {skip, timeout: 30000
   assert.equal(ux.recovery.emptySearch.hasMessage, true);
   assert.equal(hits.some(h => !h.startsWith('GET ')), false);
   assert.match(fs.readFileSync(path.join(dir, 'out', 'fixture', 'site', 'ux', 'index.html'), 'utf8'), /not a conformance statement/, 'a clean result still carries the warning');
+});
+
+test('a small Claude budget is respected and the shortfall is stated', {skip, timeout: 300000}, async () => {
+  const {server, port} = await startUxFixture('good');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'guardian-ux-'));
+  const config = uxConfig('good', port);
+  const file = path.join(dir, 'fixture.json');
+  fs.writeFileSync(file, JSON.stringify({...config, ux: {...config.ux, devices: ['desktop'], journeyDevices: ['desktop']}}));
+  const log = path.join(dir, 'claude.jsonl');
+  const child = spawn(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--claude-budget', '2', '--config', file, '--out', path.join(dir, 'out'), '--memory', path.join(dir, 'state.json')], {cwd: root, stdio: 'ignore', env: {...process.env, GUARDIAN_CLAUDE_BIN: fake, FAKE_CLAUDE_LOG: log}});
+  await new Promise(resolve => child.on('close', resolve));
+  stopServer(server);
+  const report = JSON.parse(fs.readFileSync(path.join(dir, 'out', 'fixture', 'report.json'), 'utf8'));
+  assert.equal(fs.readFileSync(log, 'utf8').trim().split('\n').length, 2, 'never more calls than the budget');
+  assert.equal(report.budget.limit, 2);
+  assert.equal(report.budget.complete, false);
+  assert.ok(report.budget.shortfalls.some(x => /skipped/.test(x)), 'skipped review groups are named');
+  assert.equal(report.status, 'COMPLETED_WITH_LIMITATIONS');
+  assert.equal(typeof report.ux.scorecard.accessibility.score, 'number', 'measured results are unaffected');
+  assert.match(fs.readFileSync(path.join(dir, 'out', 'fixture', 'site', 'ux', 'index.html'), 'utf8'), /incomplete because of the Claude call budget/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'out', 'summary.json'), 'utf8')).budgetLimited, 1);
+});
+
+test('an invalid Claude budget is refused', () => {
+  const result = spawnSync(process.execPath, ['src/cli.mjs', '--mode', 'ux', '--claude-budget', '999', '--url', 'https://example.com/'], {cwd: root, encoding: 'utf8'});
+  assert.equal(result.status, 64);
+  assert.match(result.stderr, /budget/i);
 });
 
 test('without Claude the measured assessment still stands, and says what is missing', {skip, timeout: 300000}, async () => {

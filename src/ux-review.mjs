@@ -145,19 +145,21 @@ const RULES = `Rules for this review:
 
 export async function reviewBatch(ai, {batch, config, evidence, shots, outDir}) {
   const criteria = CRITERIA.filter(c => c.method === 'expert' && c.batch === batch);
-  const images = shots.map(s => path.join(outDir, s.jpg)).filter(f => fs.existsSync(f));
+  const present = shots.filter(s => fs.existsSync(path.join(outDir, s.jpg)));
+  const images = present.map(s => path.join(outDir, s.jpg));
   const definition = criteria.map(c => ({id: c.id, principle: DIMENSIONS[c.dimension], question: c.question, lookFor: c.lookFor}));
   const site = {name: config.name, purpose: config.purpose, priorities: config.priorities, audiences: config.audiences};
-  const prompt = `You are a senior UX researcher and product designer conducting an expert evaluation of ${config.url}. Assess only these criteria, each on its own merits:\n${JSON.stringify(definition)}\n\nSite context (trusted configuration): ${JSON.stringify(site)}\n\n${RULES}\n\nThe ${images.length} attached screenshots are, in order: ${shots.slice(0, images.length).map(s => `${s.id} (${s.device}, ${s.template}, ${s.stage}${s.journey ? `, journey: ${s.journey}` : ''})`).join('; ')}.\n\nEvidence collected by the audit:\n${untrusted(evidence, 15000)}`;
+  const prompt = `You are a senior UX researcher and product designer conducting an expert evaluation of ${config.url}. Assess only these criteria, each on its own merits:\n${JSON.stringify(definition)}\n\nSite context (trusted configuration): ${JSON.stringify(site)}\n\n${RULES}\n\nThe ${images.length} attached screenshots are, in order: ${present.map(s => s.id).join(', ')}. What each one shows is listed under "shots" in the evidence.\n\nEvidence collected by the audit:\n${untrusted(evidence, 15000)}`;
   const output = await ai.ask(prompt, reviewSchema(criteria.map(c => c.id)), {images, timeoutMs: Math.max(config.ai.timeoutMs, 240000)});
   return {output, criteria};
 }
 
 /** A second, sceptical reading of the expert issues. It can only remove or downgrade them. */
 export async function verifyIssues(ai, {issues, shots, config, outDir}) {
-  const images = shots.map(s => path.join(outDir, s.jpg)).filter(f => fs.existsSync(f));
+  const present = shots.filter(s => fs.existsSync(path.join(outDir, s.jpg)));
+  const images = present.map(s => path.join(outDir, s.jpg));
   const claims = issues.map((x, i) => ({id: String(i), title: x.title, problem: x.problem, observedEvidence: x.observedEvidence, cites: x.evidenceRefs}));
-  const prompt = `You are checking another reviewer's UX claims about ${config.url}. Be sceptical. For each claim, look only at the cited screenshots and decide: "supported" if the screenshot clearly shows it, "weak" if it is plausible but not visible or depends on assumptions about people, "contradicted" if the screenshot shows otherwise. If a claim describes the same underlying problem as an earlier claim in the list, set duplicateOf to that earlier id, otherwise use an empty string.\n\nThe ${images.length} attached screenshots are, in order: ${shots.slice(0, images.length).map(s => s.id).join(', ')}.\n\nClaims:\n${untrusted(claims, 9000)}`;
+  const prompt = `You are checking another reviewer's UX claims about ${config.url}. Be sceptical. For each claim, look only at the cited screenshots and decide: "supported" if the screenshot clearly shows it, "weak" if it is plausible but not visible or depends on assumptions about people, "contradicted" if the screenshot shows otherwise. If a claim describes the same underlying problem as an earlier claim in the list, set duplicateOf to that earlier id, otherwise use an empty string.\n\nThe ${images.length} attached screenshots are, in order: ${present.map(s => s.id).join(', ')}.\n\nClaims:\n${untrusted(claims, 9000)}`;
   const output = await ai.ask(prompt, VERIFY_SCHEMA, {images, timeoutMs: Math.max(config.ai.timeoutMs, 240000)});
   return new Map((output.results || []).map(r => [r.id, r]));
 }

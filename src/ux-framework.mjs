@@ -113,7 +113,7 @@ export const VERDICT_VALUE = {pass: 1, concern: 0.5, fail: 0};
 /** A short fingerprint of the rubric. Scores are only compared when this is unchanged. */
 export function rubricVersion(thresholds = DEFAULT_THRESHOLDS, weights = {}) {
   const shape = CRITERIA.map(c => [c.id, c.category, weights[c.id] ?? c.weight, c.method]);
-  return crypto.createHash('sha1').update(JSON.stringify([shape, thresholds])).digest('hex').slice(0, 8);
+  return crypto.createHash('sha1').update(JSON.stringify(['measured-only-scores', shape, thresholds])).digest('hex').slice(0, 8);
 }
 
 export function criterionById(id) { return CRITERIA.find(c => c.id === id) || null; }

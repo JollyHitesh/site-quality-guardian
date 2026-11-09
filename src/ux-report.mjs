@@ -4,10 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {escapeHtml as esc, cleanText} from './security.mjs';
 
-const CLASS_LABEL = {'detected-defect': 'Detected by measurement', 'expert-judgment': 'Expert judgement', 'research-needed': 'Needs user research'};
+const CLASS_LABEL = {'detected-defect': 'Measured defects', 'expert-judgment': 'Expert design hypotheses', 'research-needed': 'Ideas needing user research'};
+const PROVENANCE_CHIP = {'detected-defect': 'Measured', 'expert-judgment': 'Expert hypothesis', 'research-needed': 'Research idea'};
+// No script may run and nothing may load from elsewhere, whatever a report ends up containing.
+export const REPORT_CSP = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'";
 const CLASS_INTRO = {
-  'detected-defect': 'A rule measured these in the browser. The result is reproducible.',
-  'expert-judgment': 'A reviewer judged these from cited screenshots and actions, and a second reading checked each claim. Treat them as well-supported hypotheses.',
+  'detected-defect': 'A published rule measured these in a real browser. They are facts about this run and can be reproduced.',
+  'expert-judgment': 'A reviewer judged these from cited screenshots and actions, and a second reading checked each claim. They are hypotheses, and they do not affect any score.',
   'research-needed': 'These are ideas worth testing with real visitors. Do not act on them without that research.',
 };
 const introFor = (cls, ux) => (cls === 'expert-judgment' && ux.expert.verification !== 'complete' ? 'A reviewer judged these from cited screenshots and actions. The second reading did not run, so their confidence has been lowered.' : CLASS_INTRO[cls]);
@@ -27,7 +30,7 @@ nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid
 .notice{background:var(--wash);border-left:3px solid var(--accent);padding:12px 14px;border-radius:0 8px 8px 0;margin:14px 0}.brief{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:12px;margin:16px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}.brief h3{margin-top:0}
 .scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:14px 0}.score b{display:block;font-size:2.1rem;line-height:1.1;font-variant-numeric:tabular-nums}.score small{color:var(--muted)}.bar{height:6px;background:var(--wash);border-radius:3px;margin:8px 0}.bar i{display:block;height:100%;border-radius:3px;background:var(--accent)}
 .chip{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:.75rem;color:var(--muted);margin:2px 4px 2px 0}.sev{font-weight:700;border-color:currentColor}.P0{color:var(--p0)}.P1{color:var(--p1)}.P2{color:var(--p2)}.P3{color:var(--p3)}.pass,.SUCCESS{color:var(--good)}.concern,.INCOMPLETE{color:var(--warn)}.fail,.FAILURE{color:var(--bad)}.REGRESSED{color:var(--bad);font-weight:700}
-.issue{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:4px 24px}
+.chip.kind{font-weight:700;color:var(--ink)}.calc{font-variant-numeric:tabular-nums}.evidence-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}.evidence-grid figure{margin:0;scroll-margin-top:64px}.evidence-grid img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}tr:target,figure:target{outline:2px solid var(--accent)}.issue{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:4px 24px}
 .strip{display:flex;gap:10px;overflow-x:auto;padding:6px 0 10px}.strip figure{margin:0;flex:0 0 150px}.strip.wide figure{flex-basis:220px}.strip img,.compare img{width:100%;border-radius:8px;border:1px solid var(--line);display:block}figcaption{font-size:.75rem;color:var(--muted);margin-top:4px;line-height:1.3;overflow-wrap:anywhere}
 .compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:start}.compare figure{margin:0}
 .scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.875rem;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:600}
@@ -49,7 +52,7 @@ function renderIssue(issue, shots) {
   const images = issue.evidenceRefs.filter(r => shots.has(r));
   const actions = issue.evidenceRefs.filter(r => /^A\d/.test(r));
   const cause = issue.rootCause?.status === 'established' ? 'Cause (established from the page)' : 'Likely cause (hypothesis)';
-  return `<article class="issue" id="${esc(issue.id)}"><span class="chip sev ${esc(issue.severity)}">${esc(issue.severity)}</span><span class="chip">Confidence: ${esc(issue.confidence)}</span><span class="chip">${esc(issue.scope.replace(/-/g, ' '))}</span><span class="chip ${esc(issue.trend || '')}">${esc(issue.trend || 'NEW')}${issue.occurrences > 1 ? `, ${esc(issue.occurrences)} runs` : ''}</span>${issue.validated ? '<span class="chip pass">Validated with research</span>' : ''}${issue.devices.map(d => `<span class="chip">${esc(d)}</span>`).join('')}
+  return `<article class="issue" id="${esc(issue.id)}"><span class="chip kind">${esc(PROVENANCE_CHIP[issue.class])}</span><span class="chip sev ${esc(issue.severity)}">${esc(issue.severity)}</span><span class="chip">Confidence: ${esc(issue.confidence)}</span><span class="chip">${esc(issue.scope.replace(/-/g, ' '))}</span><span class="chip ${esc(issue.trend || '')}">${esc(issue.trend || 'NEW')}${issue.occurrences > 1 ? `, ${esc(issue.occurrences)} runs` : ''}</span>${issue.validated ? '<span class="chip pass">Validated with research</span>' : ''}${issue.devices.map(d => `<span class="chip">${esc(d)}</span>`).join('')}
 <h3>${esc(issue.title)}</h3><p class="sub"><strong>${esc(issue.persona)}</strong> trying to: ${esc(issue.userGoal)}</p>
 <div class="two"><div><h4>Problem</h4><p>${esc(issue.problem)}</p></div><div><h4>Recommendation</h4><p>${esc(issue.recommendation)}</p></div></div>
 ${images.length ? `<div class="strip">${images.map(id => thumb(id, shots)).join('')}</div>` : ''}
@@ -65,13 +68,24 @@ function trendText(trend, samePages) {
   return `${sign}${trend.score} since the last comparable run${samePages ? '' : ', though the pages reviewed differ'}`;
 }
 
+const refLinks = refs => refs.slice(0, 6).map(ref => `<a href="#ev-${esc(ref)}">${esc(ref)}</a>`).join(', ') || 'None';
+
+function renderScoreRows(rows) {
+  return `<div class="scroll"><table><thead><tr><th>Criterion</th><th>Result</th><th>Points</th><th>Why</th><th>Evidence</th></tr></thead><tbody>${rows.map(row => `<tr><td>${esc(row.question)}<br><span class="sub">${esc(row.criterion)}</span></td><td class="${esc(row.verdict)}">${esc(VERDICT_LABEL[row.verdict])}</td><td class="calc">${row.earned == null ? 'Not counted' : `${esc(row.earned)} of ${esc(row.weight)}`}</td><td>${esc(row.detail)}<br><span class="sub">Pass: ${esc(row.rubric.pass)}. Fail: ${esc(row.rubric.fail)}.</span></td><td>${refLinks(row.evidenceRefs)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderExpertRows(rows) {
+  return `<div class="scroll"><table><thead><tr><th>Question</th><th>Reviewer's view</th><th>Why</th><th>Evidence</th></tr></thead><tbody>${rows.map(row => `<tr><td>${esc(row.question)}<br><span class="sub">${esc(row.criterion)}</span></td><td class="${esc(row.verdict)}">${esc(VERDICT_LABEL[row.verdict])}</td><td>${esc(row.detail)}</td><td>${refLinks(row.evidenceRefs)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
 function renderScorecard(ux) {
   const cards = Object.entries(ux.scorecard).map(([id, c]) => {
     const t = ux.trend.categories[id];
-    return `<div class="card score"><small>${esc(c.label)}</small><b>${c.score == null ? '&ndash;' : esc(c.score)}</b>${c.score == null ? `<p class="sub">Not scored. ${esc(c.reason)}</p>` : `<div class="bar"><i style="width:${Number(c.score)}%"></i></div><small>Measured criteria only: ${esc(c.measuredScore)}. ${esc(Math.round(c.coverage * 100))}% of weight assessed.</small><br><small>${esc(trendText(t, ux.trend.samePages))}</small>`}</div>`;
+    const expert = c.expert.rows.length ? `<br><small>Expert view, not scored: ${esc(c.expert.pass)} pass, ${esc(c.expert.concern)} concern, ${esc(c.expert.fail)} fail.</small>` : '';
+    return `<div class="card score"><small>${esc(c.label)}</small><b>${c.score == null ? '&ndash;' : esc(c.score)}</b>${c.score == null ? `<p class="sub">Not scored. ${esc(c.reason)}</p>` : `<div class="bar"><i style="width:${Number(c.score)}%"></i></div><small>${esc(c.calculation.earned)} of ${esc(c.calculation.assessedWeight)} measured points. ${esc(Math.round(c.coverage * 100))}% of the measured weight was assessed.</small><br><small>${esc(trendText(t, ux.trend.samePages))}</small>`}${expert}</div>`;
   }).join('');
-  const rows = Object.values(ux.scorecard).map(c => `<details><summary>${esc(c.label)}: criteria and evidence</summary><div class="scroll"><table><thead><tr><th>Criterion</th><th>Method</th><th>Weight</th><th>Result</th><th>Detail</th><th>Evidence</th></tr></thead><tbody>${c.rows.map(r => `<tr><td>${esc(r.question)}<br><span class="sub">${esc(r.criterion)}</span></td><td>${esc(r.method)}</td><td>${esc(r.weight)}</td><td class="${esc(r.verdict)}">${esc(VERDICT_LABEL[r.verdict])}</td><td>${esc(r.detail)}</td><td>${esc(r.evidenceRefs.slice(0, 5).join(', '))}</td></tr>`).join('')}</tbody></table></div></details>`).join('');
-  return `<div class="scores">${cards}</div><p class="sub">Each category score is the weighted average of its assessed criteria, with pass = 100, concern = 50 and fail = 0. A score appears only when at least ${esc(Math.round(0.5 * 100))}% of the weight was assessed and at least one measured criterion is included. Rubric version ${esc(ux.rubricVersion)}.</p>${rows}`;
+  const explain = Object.values(ux.scorecard).map(c => `<details><summary>Why ${esc(c.label)} scored ${c.score == null ? 'nothing' : esc(c.score)}</summary><h4>Measured criteria, which make up the score</h4>${renderScoreRows(c.rows)}<p class="sub calc">${c.score == null ? esc(c.reason) : `${esc(c.calculation.earned)} points earned of ${esc(c.calculation.assessedWeight)} assessed = ${esc(c.score)}.`}</p>${c.expert.rows.length ? `<h4>Expert assessments, which do not affect the score</h4>${renderExpertRows(c.expert.rows)}` : ''}</details>`).join('');
+  return `<div class="scores">${cards}</div><p class="sub">Scores use measured criteria only. Pass earns the criterion's full weight, concern earns half and fail earns none. A criterion that was not assessed, or has no evidence to cite, is left out. Rubric version ${esc(ux.rubricVersion)}.</p>${explain}`;
 }
 
 function journeyTrend(runs = []) {
@@ -121,12 +135,30 @@ function renderAccessibility(ux, report) {
 }
 
 function executiveBrief(ux) {
-  // The most serious well-supported problems, one per criterion so one fault cannot fill the list.
-  const ranked = ux.issues.filter(i => i.class !== 'research-needed').sort((a, b) => a.severity.localeCompare(b.severity) || CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence]);
-  const top = [...new Map([...ranked].reverse().map(i => [i.criterion, i])).values()].reverse().slice(0, 5);
+  // One per criterion, so that one fault cannot fill the summary.
+  const pick = (issues, n) => [...new Map([...issues].sort((a, b) => a.severity.localeCompare(b.severity) || CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence]).reverse().map(i => [i.criterion, i])).values()].reverse().slice(0, n);
+  const measured = pick(ux.issues.filter(i => i.class === 'detected-defect'), 3);
+  const expert = pick(ux.issues.filter(i => i.class === 'expert-judgment'), 2);
+  const section = (label, items) => (items.length ? `<h4>${esc(label)}</h4>${list([...new Set(items)])}` : '');
+  const both = fn => `${section('Measured', measured.map(fn))}${section('Expert hypotheses', expert.map(fn))}`;
   const goals = [...new Map(ux.journeys.map(j => [j.id, j])).values()];
   const outcomes = goals.map(g => `${g.title}: ${ux.journeys.filter(j => j.id === g.id).map(j => `${OUTCOME_TEXT[j.outcome].toLowerCase()} on ${j.device} in ${j.metrics.actionCount} actions`).join(', ')}`);
-  return `<div class="brief"><div class="card"><h3>What visitors are trying to do</h3>${outcomes.length ? list(outcomes) : '<p>No journey ran.</p>'}</div><div class="card"><h3>Where the design makes it harder</h3>${top.length ? list(top.map(i => i.title)) : '<p>No problem with sufficient evidence was recorded in this run. This does not prove there are none.</p>'}</div><div class="card"><h3>What should change first</h3>${top.length ? list([...new Set(top.map(i => i.recommendation))]) : '<p>Nothing is proposed from this run.</p>'}</div><div class="card"><h3>How we will know it worked</h3>${top.length ? list([...new Set(top.map(i => i.acceptanceCriteria[0]))]) : '<p>Re-run this audit after any change.</p>'}<p class="sub">Each issue states its own validation method. The agent re-measures on every run.</p></div></div>`;
+  const nothing = !measured.length && !expert.length;
+  return `<div class="brief"><div class="card"><h3>What visitors are trying to do</h3>${outcomes.length ? list(outcomes) : '<p>No journey ran.</p>'}</div><div class="card"><h3>Where the design makes it harder</h3>${nothing ? '<p>No problem with sufficient evidence was recorded in this run. This does not prove there are none.</p>' : both(i => i.title)}</div><div class="card"><h3>What should change first</h3>${nothing ? '<p>Nothing is proposed from this run.</p>' : both(i => i.recommendation)}</div><div class="card"><h3>How we will know it worked</h3>${nothing ? '<p>Re-run this audit after any change.</p>' : both(i => i.acceptanceCriteria[0])}<p class="sub">Each issue states its own validation method. The agent re-measures on every run.</p></div></div>`;
+}
+
+/** Everything a score or issue cites, so each reference leads to something a reader can check. */
+function renderEvidence(ux, report, shots) {
+  const refs = new Set([...ux.issues.flatMap(i => i.evidenceRefs), ...Object.values(ux.scorecard).flatMap(c => [...c.rows, ...c.expert.rows].flatMap(row => row.evidenceRefs))]);
+  const images = [...shots.values()].filter(s => refs.has(s.id)).map(s => `<figure id="ev-${esc(s.id)}"><a href="shots/${esc(path.basename(s.jpg))}"><img loading="lazy" src="shots/${esc(path.basename(s.jpg))}" alt="Screenshot ${esc(s.id)}: ${esc(s.device)}, ${esc(s.template)}"></a><figcaption>${esc(s.id)} · ${esc(s.device)} · ${esc(s.template)} · ${esc(STAGE_LABEL[s.stage] || s.stage)}</figcaption></figure>`).join('');
+  const actions = report.actions.filter(a => refs.has(a.id)).map(a => `<tr id="ev-${esc(a.id)}"><td>${esc(a.id)}</td><td>${esc(a.device)}</td><td>${esc(a.type)}</td><td>${esc(a.target)}</td><td>${esc(a.outcome === 'PASS' ? 'Performed' : a.outcome)}</td><td>${esc(a.after?.url ? new URL(a.after.url).pathname : '')}</td></tr>`).join('');
+  return `<div class="evidence-grid">${images || '<p>No screenshots are cited.</p>'}</div>${actions ? `<h3>Cited browser actions</h3><div class="scroll"><table><thead><tr><th>Action</th><th>Device</th><th>Type</th><th>Target</th><th>Result</th><th>Page after</th></tr></thead><tbody>${actions}</tbody></table></div>` : ''}`;
+}
+
+export function renderBudgetNotice(report) {
+  const budget = report.budget;
+  if (!budget || budget.complete) return '';
+  return `<div class="notice" role="status" style="background:#fff3cd;color:#3d2f00;border-left:3px solid #946200;padding:12px 14px;border-radius:0 8px 8px 0;margin:14px 0"><strong>This review is incomplete because of the Claude call budget.</strong> ${Number(budget.used)} of ${Number(budget.limit)} calls were used.<ul>${budget.shortfalls.map(x => `<li>${esc(x)}</li>`).join('')}</ul>Measured results are not affected. What was not reviewed is unknown, not passed.</div>`;
 }
 
 function renderMethod(ux, report) {
@@ -136,8 +168,8 @@ function renderMethod(ux, report) {
   for (const r of rejected) reasons[r.reason] = (reasons[r.reason] || 0) + 1;
   const reasonText = Object.entries(reasons).map(([k, n]) => `${k.replace(/-/g, ' ')}: ${n}`).join('; ');
   return `<p><strong>Measured results</strong> come from a real browser and from rules listed in the scorecard. <strong>Expert judgements</strong> come from a separate review of each group of criteria by Claude using the cited screenshots. Automation timings describe this run and are not estimates of how long a person would take. The agent never reports visitor feelings or satisfaction.</p>
-<p>Expert review status: ${esc(ux.expert.status)}. ${esc(ux.expert.reviewedCriteria)} expert criteria assessed. Cross-check: ${esc(ux.expert.verification || 'not run')}. ${esc(rejected.length)} claims discarded by the evidence rules${reasonText ? ` (${esc(reasonText)})` : ''}. ${esc(ux.suppressed.length)} hidden because they had no new evidence or an owner decision.</p>
-<p>Claude calls used: ${esc(report.ai?.calls ?? 0)} of ${esc(report.ai?.budget ?? 0)}. Devices: ${esc(ux.devices.join(', '))}.</p>
+<p>Claude calls used: ${esc(report.budget?.used ?? report.ai?.calls ?? 0)} of ${esc(report.budget?.limit ?? report.ai?.budget ?? 0)}.</p><p>Expert review status: ${esc(ux.expert.status)}. ${esc(ux.expert.reviewedCriteria)} expert criteria assessed. Cross-check: ${esc(ux.expert.verification || 'not run')}. ${esc(rejected.length)} claims discarded by the evidence rules${reasonText ? ` (${esc(reasonText)})` : ''}. ${esc(ux.suppressed.length)} hidden because they had no new evidence or an owner decision.</p>
+<p>Devices: ${esc(ux.devices.join(', '))}.</p>
 ${notAssessed.length ? `<details><summary>${esc(notAssessed.length)} criteria not assessed in this run</summary>${list(notAssessed)}</details>` : ''}
 ${report.errors.length ? `<details open><summary>Limitations of this run</summary>${list(report.errors)}</details>` : ''}${ux.resolvedThisRun?.length ? `<h3>No longer present</h3>${list(ux.resolvedThisRun)}` : ''}`;
 }
@@ -145,7 +177,8 @@ ${report.errors.length ? `<details open><summary>Limitations of this run</summar
 function writeMarkdown(report, out) {
   const {ux} = report;
   const lines = [`# ${report.config.name}: expert UX report`, '', `${report.finishedAt}. Devices: ${ux.devices.join(', ')}.`, '', '> Measured results and expert judgements are labelled separately. Automated accessibility checks do not establish WCAG conformance.', '', '## Scorecard', ''];
-  for (const c of Object.values(ux.scorecard)) lines.push(`- **${c.label}:** ${c.score ?? `not scored (${c.reason})`}`);
+  lines.splice(5, 0, ...(report.budget && !report.budget.complete ? ['**Incomplete because of the Claude call budget:**', ...report.budget.shortfalls.map(x => `- ${x}`), ''] : []));
+  for (const c of Object.values(ux.scorecard)) lines.push(`- **${c.label}:** ${c.score ?? `not scored (${c.reason})`}. Expert view, not scored: ${c.expert.pass} pass, ${c.expert.concern} concern, ${c.expert.fail} fail.`);
   lines.push('', '## Visitor journeys', '');
   for (const j of ux.journeys) lines.push(`- **${OUTCOME_TEXT[j.outcome]}** on ${j.device}: ${j.title}. ${j.metrics.actionCount} actions, ${j.metrics.backtracks} returns, ${j.metrics.deadEnds} dead ends.`);
   for (const cls of Object.keys(CLASS_LABEL)) {
@@ -176,16 +209,17 @@ export function writeUxReport(report, out) {
     return `<section id="${cls}"><h2>${esc(CLASS_LABEL[cls])} (${issues.length})</h2><p class="sub">${esc(introFor(cls, ux))}</p>${issues.map(i => renderIssue(i, shots)).join('') || '<p>None in this run.</p>'}</section>`;
   }).join('');
   const legend = Object.entries(SEVERITY_MEANING).map(([k, x]) => `<span class="chip sev ${k}">${k}</span> ${esc(x)}`).join(' &nbsp; ');
-  const body = `<nav aria-label="Report sections"><a href="#brief">Summary</a><a href="#scorecard">Scorecard</a><a href="#journeys">Journeys</a><a href="#detected-defect">Defects</a><a href="#expert-judgment">Judgements</a><a href="#research-needed">Research</a><a href="#visual">Visual</a><a href="#accessibility">Accessibility</a><a href="#method">Method</a><a href="../index.html">Technical report</a></nav><main>
+  const body = `<nav aria-label="Report sections"><a href="#brief">Summary</a><a href="#scorecard">Scorecard</a><a href="#journeys">Journeys</a><a href="#detected-defect">Measured defects</a><a href="#expert-judgment">Expert hypotheses</a><a href="#research-needed">Research</a><a href="#visual">Visual</a><a href="#accessibility">Accessibility</a><a href="#evidence">Evidence</a><a href="#method">Method</a><a href="../index.html">Technical report</a></nav><main>
 <header><h1>${esc(report.config.name)}: expert UX report</h1><p class="sub">${esc(report.config.url)} · ${esc(report.finishedAt)} · ${esc(ux.devices.join(', '))}</p></header>
-<section id="brief"><h2>Summary</h2>${executiveBrief(ux)}<p class="sub">${legend}</p></section>
+${renderBudgetNotice(report)}<section id="brief"><h2>Summary</h2>${executiveBrief(ux)}<p class="sub">${legend}</p></section>
 <section id="scorecard"><h2>UX scorecard</h2>${renderScorecard(ux)}</section>
 <section id="journeys"><h2>Visitor journeys</h2><p class="sub">A journey counts as reached only when a condition fixed in advance is true on the final page. An automated route may differ from what a person would do.</p>${renderJourneys(ux, shots)}</section>
 ${sections}
 <section id="visual"><h2>Visual design across devices</h2>${renderResponsive(ux, shots)}</section>
 <section id="accessibility"><h2>Accessibility</h2>${renderAccessibility(ux, report)}</section>
+<section id="evidence"><h2>Evidence index</h2><p class="sub">Everything cited by a score or an issue.</p>${renderEvidence(ux, report, shots)}</section>
 <section id="method"><h2>Method and limits</h2>${renderMethod(ux, report)}</section></main>`;
-  fs.writeFileSync(path.join(target, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${esc(report.config.name)} UX report</title><style>${CSS}</style></head><body>${body}</body></html>`);
+  fs.writeFileSync(path.join(target, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><meta http-equiv="Content-Security-Policy" content="${REPORT_CSP}"><title>${esc(report.config.name)} UX report</title><style>${CSS}</style></head><body>${body}</body></html>`);
   fs.writeFileSync(path.join(target, 'files.json'), JSON.stringify(['index.html', ...[...shots.values()].map(s => `shots/${path.basename(s.jpg)}`)]));
   writeMarkdown(report, out);
 }

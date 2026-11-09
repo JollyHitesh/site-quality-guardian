@@ -43,7 +43,7 @@ export function sanitizeUxMemory(raw) {
     memory.journeys[key.slice(0, 80)] = {title: cleanText(j.title, 140), path: texts(j.path, LIMITS.path, 100), runs: (Array.isArray(j.runs) ? j.runs : []).filter(isObject).slice(-LIMITS.runsPerJourney).map(r => ({at: cleanText(r.at, 30), outcome: cleanText(r.outcome, 12), actions: count(r.actions), backtracks: count(r.backtracks), automationElapsedMs: count(r.automationElapsedMs)}))};
   }
   memory.proposed = (Array.isArray(raw.proposed) ? raw.proposed : []).filter(isObject).slice(0, LIMITS.proposed).map(p => ({id: cleanText(p.id, 40), title: cleanText(p.title, 140), why: cleanText(p.why, 240), persona: cleanText(p.persona, 120), estimatedTurns: count(p.estimatedTurns), coreTask: !!p.coreTask, targetActions: count(p.targetActions), successCheck: sanitizeCheck(p.successCheck)}));
-  memory.scoreHistory = (Array.isArray(raw.scoreHistory) ? raw.scoreHistory : []).filter(isObject).slice(-LIMITS.scores).map(h => ({at: cleanText(h.at, 30), rubric: cleanText(h.rubric, 16), journeySet: cleanText(h.journeySet, 16), pages: texts(h.pages, 12, 80), categories: Object.fromEntries(Object.entries(isObject(h.categories) ? h.categories : {}).slice(0, 8).map(([k, c]) => [k.slice(0, 30), {score: score(c?.score), measuredScore: score(c?.measuredScore), coverage: Number(c?.coverage) || 0}]))}));
+  memory.scoreHistory = (Array.isArray(raw.scoreHistory) ? raw.scoreHistory : []).filter(isObject).slice(-LIMITS.scores).map(h => ({at: cleanText(h.at, 30), rubric: cleanText(h.rubric, 16), journeySet: cleanText(h.journeySet, 16), pages: texts(h.pages, 12, 80), categories: Object.fromEntries(Object.entries(isObject(h.categories) ? h.categories : {}).slice(0, 8).map(([k, c]) => [k.slice(0, 30), {score: score(c?.score), coverage: Number(c?.coverage) || 0}]))}));
   for (const [key, value] of Object.entries(isObject(raw.signatures) ? raw.signatures : {}).slice(-LIMITS.signatures)) memory.signatures[key.slice(0, 80)] = cleanText(value, 16);
   memory.stablePages = texts(raw.stablePages, 12, 80);
   memory.coverage = {templates: counts(raw.coverage?.templates), criteria: counts(raw.coverage?.criteria), keyboard: counts(raw.coverage?.keyboard)};
@@ -189,7 +189,7 @@ export function learnUx(memory, ux, at) {
   }
   if (!memory.stablePages.length) memory.stablePages = (ux.pagePicks || []).slice(0, Math.max(1, (ux.pagePicks || []).length - 1));
   if (ux.proposedJourneys?.length) memory.proposed = ux.proposedJourneys.slice(0, LIMITS.proposed);
-  memory.scoreHistory = [...memory.scoreHistory, {at, rubric: ux.rubricVersion, journeySet: ux.journeySet, pages: ux.coverage.templates.slice(0, 12), categories: Object.fromEntries(Object.entries(ux.scorecard).map(([id, c]) => [id, {score: c.score, measuredScore: c.measuredScore, coverage: c.coverage}]))}].slice(-LIMITS.scores);
+  memory.scoreHistory = [...memory.scoreHistory, {at, rubric: ux.rubricVersion, journeySet: ux.journeySet, pages: ux.coverage.templates.slice(0, 12), categories: Object.fromEntries(Object.entries(ux.scorecard).map(([id, c]) => [id, {score: c.score, coverage: c.coverage}]))}].slice(-LIMITS.scores);
   const entries = Object.entries(memory.issues).sort(([, a], [, b]) => (a.state === b.state ? a.lastSeen.localeCompare(b.lastSeen) : a.state === 'resolved' ? -1 : 1));
   memory.issues = Object.fromEntries(entries.slice(-LIMITS.issues));
   return resolved;

@@ -43,11 +43,12 @@ export function choosePages(urls, cfg, visited, limit) {
 }
 
 export class Audit {
-  constructor({config: siteConfig, mode, out, memoryFile, trace = false, now = () => new Date()}) {
+  constructor({config: siteConfig, mode, out, memoryFile, trace = false, now = () => new Date(), claudeBudget = null}) {
     // A UX audit has its own devices and budgets. Every other mode keeps the site's settings.
-    const config = mode === 'ux' ? {...siteConfig, devices: siteConfig.ux.devices, screenshotLimit: siteConfig.ux.screenshotLimit, maxRunMinutes: Math.max(siteConfig.maxRunMinutes, siteConfig.ux.maxRunMinutes), ai: {...siteConfig.ai, maxCalls: siteConfig.ux.maxCalls}} : siteConfig;
+    const config = mode === 'ux' ? {...siteConfig, devices: siteConfig.ux.devices, screenshotLimit: siteConfig.ux.screenshotLimit, maxRunMinutes: Math.max(siteConfig.maxRunMinutes, siteConfig.ux.maxRunMinutes), ai: {...siteConfig.ai, maxCalls: limitCalls(siteConfig.ux.maxCalls, claudeBudget)}} : {...siteConfig, ai: {...siteConfig.ai, maxCalls: limitCalls(siteConfig.ai.maxCalls, claudeBudget)}};
     Object.assign(this, {config, mode, out, memoryFile, trace, now});
-    this.aiReserveCalls = mode === 'ux' ? config.ux.reviewCalls + 1 : 1;
+    // Journeys come first, but may not eat the whole budget. Unused planning calls go to the review.
+    this.aiReserveCalls = mode === 'ux' ? Math.min(config.ux.reviewCalls, Math.ceil(config.ai.maxCalls / 2)) : 1;
     this.browsers = {};
     this.safety = createSafetyLog();
     this.graph = createGraph();
@@ -745,6 +746,7 @@ export class Audit {
       if (!replayed) await this.journeyTurns(ctx, goal, record, verdict, await observe(ctx.page, ctx.cfg), cap);
     }
     Object.assign(record, classifyGoal(verdict));
+    record.stopReason = verdict.stopReason;
     delete record.replayPath;
     record.screenshot = ctx.uxTrace?.lastFile || await this.shot(ctx, `goal-${this.report.goals.length}-${record.outcome.toLowerCase()}`);
     if (record.outcome === 'FAILURE') {
@@ -1005,6 +1007,15 @@ export class Audit {
     }
   }
 
+  /** Says plainly what a limited Claude budget left undone. */
+  reportIntelligentBudget() {
+    const shortfalls = [];
+    const cut = this.report.goals.filter(g => g.stopReason === 'ai-call-budget');
+    if (cut.length) shortfalls.push(`${cut.length} visitor journey(s) stopped at the Claude call budget: ${cut.map(g => cleanText(g.title, 60)).join('; ')}.`);
+    if (!this.report.aiSummary) shortfalls.push('The screenshot review did not complete.');
+    this.report.budget = {limit: this.ai.state.max, used: this.ai.state.calls, complete: !shortfalls.length, shortfalls, stopped: this.ai.state.stopped};
+  }
+
   finalize() {
     this.report.access = {...this.access, blocked: this.isAccessBlocked(), ratio: this.access.attempted ? Number((this.access.denied / this.access.attempted).toFixed(2)) : 0};
     if (this.report.access.blocked) {
@@ -1079,6 +1090,7 @@ export class Audit {
       if (mode === 'intelligent' && report.actions.length && !this.aborted && !report.access.blocked) {
         await this.aiReview();
         report.ai = this.ai.summary();
+        this.reportIntelligentBudget();
       }
       report.status = report.access.blocked ? 'BLOCKED_BY_SITE_PROTECTION' : this.aborted ? 'TIMED_OUT' : !report.actions.length ? 'NO_ACTIONS' : report.errors.length ? 'COMPLETED_WITH_LIMITATIONS' : 'COMPLETED';
     } catch (e) {
@@ -1101,6 +1113,10 @@ export class Audit {
     this.log(`finished ${report.status}: ${report.actions.length} actions, ${report.findings.length} findings (${report.blockers} blockers), ${report.errors.length} limitations`);
     return report;
   }
+}
+
+function limitCalls(configured, budget) {
+  return budget === null ? configured : Math.min(configured, budget);
 }
 
 function checkContext(record, start) {

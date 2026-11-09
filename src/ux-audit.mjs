@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {DEVICE_PROFILES, forDevice} from './config.mjs';
 import {observe, act, settle, locateControl, stateSignature, waitForChange, liveDescription, SERVER_ERROR_PAGE} from './browser.mjs';
-import {classifyControl, cleanText, isAllowedUrl, isExcludedPath} from './security.mjs';
+import {classifyControl, cleanText, findInjectionText, isAllowedUrl, isExcludedPath} from './security.mjs';
 import {templateOf, scrollThrough} from './checks.mjs';
 import {controlKey, stateKeyOf, untestedControls, markTried} from './explorer.mjs';
 import {robotsAllows} from './guard.mjs';
@@ -14,7 +14,7 @@ import {choosePages} from './audit.mjs';
 import {collectDesign} from './ux-design.mjs';
 import {watchFeedback, readFeedback, describeStep, computeJourneyMetrics, isInterstitial, recoveryControls} from './ux-metrics.mjs';
 import {tabWalk, analyzeTabWalk, pointerOnlyControls, findOverlay, rememberFixedElements, testDialog, controlAppearance, focusIsLost, readAccessibilityTree} from './ux-keyboard.mjs';
-import {DEFAULT_THRESHOLDS, rubricVersion} from './ux-framework.mjs';
+import {DEFAULT_THRESHOLDS, EXPERT_BATCHES, CRITERIA, rubricVersion} from './ux-framework.mjs';
 import {evaluateMeasured, buildMeasuredIssues} from './ux-measures.mjs';
 import {reviewBatch, validateReview, verifyIssues, finishExpertIssue, selectImages} from './ux-review.mjs';
 import {buildScorecard, compareScores} from './ux-scorecard.mjs';
@@ -235,7 +235,9 @@ export class UxAuditor {
       journeys = proposals.filter(g => isUsableCheck(g.successCheck)).slice(0, this.ux.maxJourneys).map((g, i) => ({...g, id: `proposed-${i + 1}`, persona, coreTask: true}));
       this.proposedJourneys = journeys;
     }
-    this.resolvedJourneys = journeys.filter(j => isUsableCheck(j.successCheck)).slice(0, this.ux.maxJourneys);
+    // Proposed goals are shaped by page content and stored between runs, so they are screened.
+    const safe = journey => configured.length > 0 || !findInjectionText(`${journey.title} ${journey.why || ''} ${journey.successCheck?.value || ''}`);
+    this.resolvedJourneys = journeys.filter(j => isUsableCheck(j.successCheck) && safe(j)).slice(0, this.ux.maxJourneys);
     return this.resolvedJourneys;
   }
 
@@ -293,7 +295,7 @@ export class UxAuditor {
     const metrics = computeJourneyMetrics(steps, {startState: trace.startState, edges: a.graph.edges});
     this.data.journeys.push({
       key, id: journey.id, title: journey.title, why: journey.why || '', persona: journey.persona, device: ctx.name, coreTask: journey.coreTask !== false, targetActions: journey.targetActions || null, successCheck: journey.successCheck,
-      outcome: record.outcome, reason: record.reason, problem: record.problem, planner: record.planner || 'claude', replayFailed: !!record.replayFailed, turns: record.turns, startUrl: trace.startUrl, template: trace.startUrl ? templateOf(trace.startUrl) : '/',
+      outcome: record.outcome, reason: record.reason, stopReason: record.stopReason || null, problem: record.problem, planner: record.planner || 'claude', replayFailed: !!record.replayFailed, turns: record.turns, startUrl: trace.startUrl, template: trace.startUrl ? templateOf(trace.startUrl) : '/',
       metrics, steps, stages: trace.stages.filter(s => !record.replayRestarted || !steps.length || s.stage === 'journey-start' || steps.some(x => x.actionId === s.actionId)), path: steps.some(s => s.kind === 'search') ? [] : steps.filter(s => s.ok).map(s => s.key), // a typed query cannot be replayed from a key
     });
   }
@@ -474,7 +476,10 @@ export class UxAuditor {
     const status = {status: 'not-run', batches: [], rejected: [], verification: null, reviewedCriteria: 0};
     const assessments = [], accepted = [];
     const usable = this.shots.filter(s => s.jpg);
-    const batches = orderBatches(this.memory, Math.max(0, this.ux.reviewCalls - 1));
+    // One call is kept for the cross-check whenever at least two remain.
+    const allowance = Math.min(this.ux.reviewCalls, Math.max(0, a.ai.state.max - a.ai.state.calls));
+    const batches = orderBatches(this.memory, allowance >= 2 ? allowance - 1 : allowance);
+    status.skippedBatches = EXPERT_BATCHES.filter(b => !batches.includes(b));
     const pageText = this.texts.join(' ').slice(0, 800000);
     const actionIds = new Set(a.report.actions.map(x => x.id));
     for (const batch of batches) {
@@ -500,6 +505,7 @@ export class UxAuditor {
 
   async verifyExpert(accepted, status) {
     if (!accepted.length) return new Map();
+    if (this.a.ai.state.calls >= this.a.ai.state.max) { status.verification = 'skipped-budget'; return new Map(); }
     const cited = [...new Set(accepted.flatMap(x => x.issue.evidenceRefs))].map(id => this.shots.find(s => s.id === id)).filter(Boolean).slice(0, this.ux.imagesPerBatch + 2);
     try {
       this.a.log('expert review: verification');
@@ -513,6 +519,21 @@ export class UxAuditor {
     }
   }
 
+  /** Says plainly what a limited Claude budget left undone, so absence is never read as a pass. */
+  reportBudget(status, acceptedCount) {
+    const {ai, report} = this.a;
+    const shortfalls = [];
+    const cut = this.data.journeys.filter(j => j.stopReason === 'ai-call-budget');
+    if (cut.length) shortfalls.push(`${cut.length} visitor journey(s) could not be planned within the budget: ${cut.map(j => `${cleanText(j.title, 60)} on ${j.device}`).join('; ')}. A later run can continue from the routes already learned.`);
+    if (status.skippedBatches?.length) {
+      const criteria = CRITERIA.filter(c => status.skippedBatches.includes(c.batch)).length;
+      shortfalls.push(`Expert review skipped ${status.skippedBatches.length} of ${EXPERT_BATCHES.length} groups (${status.skippedBatches.join(', ')}), covering ${criteria} criteria. The next run reviews the least-assessed groups first.`);
+    }
+    if (status.verification === 'skipped-budget' && acceptedCount) shortfalls.push(`${acceptedCount} expert hypotheses were not cross-checked, so their confidence is lowered.`);
+    report.budget = {limit: ai.state.max, used: ai.state.calls, complete: !shortfalls.length, shortfalls, stopped: ai.state.stopped};
+    for (const line of shortfalls) this.a.limitation(`Claude call budget: ${line}`);
+  }
+
   /** Decides the verdicts, runs the review and assembles what the website owner receives. */
   async assess({expert = true} = {}) {
     const {report} = this.a;
@@ -524,8 +545,9 @@ export class UxAuditor {
     const audience = this.config.audiences[0] || 'First-time visitor';
     const {issues: measuredIssues, withoutEvidence} = buildMeasuredIssues(measured.seeds, {audience, coreTemplates, devices: this.ux.devices});
     if (withoutEvidence) this.a.limitation(`${withoutEvidence} measured problem(s) had no screenshot or action to cite, so they were left out.`);
-    const review = expert ? await this.expertReview(measuredIssues, measured.assessments) : {assessments: [], accepted: [], status: {status: 'not-run', batches: [], rejected: [], verification: null, reviewedCriteria: 0}};
+    const review = expert ? await this.expertReview(measuredIssues, measured.assessments) : {assessments: [], accepted: [], status: {status: 'not-run', batches: [], rejected: [], verification: null, reviewedCriteria: 0, skippedBatches: []}};
     const verdicts = await this.verifyExpert(review.accepted, review.status);
+    this.reportBudget(review.status, review.accepted.length);
     const shotsById = new Map(this.shots.map(s => [s.id, s]));
     const failingCriteria = new Set(measured.assessments.filter(x => ['fail', 'concern'].includes(x.verdict)).map(x => x.criterion));
     const expertIssues = [];
